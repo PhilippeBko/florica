@@ -2,9 +2,4 @@
 .vscode/
 __pycache__
 venv/
-config.db
-import_csv.py
-raster_bandvalue.py
-test.py
-test_gdal.py
-api_endemia.py
+

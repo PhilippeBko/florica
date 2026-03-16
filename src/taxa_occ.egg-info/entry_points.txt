@@ -1,2 +1,0 @@
-[gui_scripts]
-x-nomen = taxaocc.taxanames:main
