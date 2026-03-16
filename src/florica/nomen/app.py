@@ -1027,6 +1027,9 @@ class MainWindowController:
             self.combo_taxa_selectedItem(selecteditem)
 
     def trview_taxonref_refresh(self, dict_torefresh):
+        self.trview_taxonref_setData()
+        return
+
     #refresh (update) the trview_taxonref model according to the database for a list of idtaxonref (refresh taxa + childs)
    
         model = self.proxy_model.sourceModel()
@@ -1073,6 +1076,8 @@ class MainWindowController:
         #select null parent
         self.trview_taxonref.setCurrentIndex(QtCore.QModelIndex())
 
+        
+
     #edit/add nodes in the model
         if items_to_update:   
             model.refresh(items_to_update)
@@ -1115,8 +1120,10 @@ class MainWindowController:
         self.proxy_model.invalidateFilter()
         self.trview_taxonref.repaint()
         #reset the current index
-        self.trview_taxonref.setCurrentIndex(QtCore.QModelIndex())
-        selected_index = self.trview_taxonref.model().index(0,0)
+        selected_index = self.trview_taxonref.currentIndex()
+        if not selected_index.isValid():
+            self.trview_taxonref.setCurrentIndex(QtCore.QModelIndex())
+            selected_index = self.trview_taxonref.model().index(0,0)
         #select if valid
         if selected_index.isValid():
             self.trview_taxonref.selectionModel().setCurrentIndex(
@@ -1131,35 +1138,24 @@ class MainWindowController:
 
     def trview_taxonref_setData(self):
         self.view.set_rank_label(f"Rank {self.view.rank_group}: ")
+        # #disconnect the signals
+        # try:
+        #     #disconnect signal to avoid multiple events (except error if not yet connected)
+        #     self.trview_taxonref.selectionModel().selectionChanged.disconnect()
+        # except Exception:
+        #     pass
         # clean the content and selection of trview_taxonref
-        self.trview_taxonref.setCurrentIndex(QtCore.QModelIndex())
         self.proxy_model.sourceModel().clear()
-        
-        # #create the filter dictionnary for query the database
-        # clade_sql = None
-        # if self.combo_taxa.currentIndex() == -1:
-        #     self.combo_taxa.setCurrentIndex(0)
-        # combo_taxa_index = self.combo_taxa.currentIndex()
-        # idtaxonref = self.combo_taxa.itemData(combo_taxa_index, role=QtCore.Qt.UserRole).idtaxonref
-        # if idtaxonref == 0 and combo_taxa_index > 0:
-        #     clade_sql = self.combo_taxa.currentText()
-        # #if self.combo_taxa.currentText().startswith('AGP IV'):
-        #     #clade_sql = self.combo_taxa.currentText().split(' - ')[1]
-        # dict_filter = {"id_taxonref" : idtaxonref, 
-        #                "search_name": self.view.search_taxon, 
-        #                "clade": clade_sql, 
-        #                "properties": self.trview_filter.dict_user_properties()
-        #               }
-        
-        #query = self.db.exec(self.db_get_json_taxa())
-        data = self.get_list_PNTaxa()
+        #self.trview_taxonref.setCurrentIndex(QtCore.QModelIndex())
 
-        #refresh all the data of the model with the new list
+        #get the list of PNTaxa from dbase, according to filters
+        data = self.get_list_PNTaxa()
+        #refresh the model with new data from dbase
         self.proxy_model.sourceModel().refreshData(data)
-        #refresh the visibility of items according to the proxy filter (accepted, published, children_only according to checkbox)
+        #refresh the visibility of items according to the proxy filter (cf. checkboxes : populated, checked, published, accepted)
         self.trview_taxonref_refreshData()
-        #ajust trview_taxonref column width        
-        self.trview_taxonref.resizeColumnToContents(0)
+        #ajust trview_taxonref column width
+        #self.trview_taxonref.resizeColumnToContents(0)
         total_width = self.trview_taxonref.viewport().width()
         self.trview_taxonref.setColumnWidth(0, int(total_width * 2 / 3))
 

@@ -1,9 +1,6 @@
 
 .vscode/
 __pycache__
-icons/
-sql/
-ui/
 venv/
 config.db
 import_csv.py

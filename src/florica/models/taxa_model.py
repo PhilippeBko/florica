@@ -1404,6 +1404,8 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         #browse the list and refresh or add the items
         node_parent = None
         self.beginResetModel()
+        # self.rootItem = PNTaxa_treeItem(None)
+        # self.parent_nodes = {}
         for myPNTaxa in ls_myPNTaxas:
             node_parent = self.getNode(myPNTaxa.id_parent)
             node_item = self.getNode(myPNTaxa.idtaxonref)
@@ -1434,11 +1436,12 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
                 #     node_parent.childCount(),
                 #     node_parent.childCount()
                 # )
+                print ("add :", myPNTaxa.taxaname)
                 self.items.append(myPNTaxa)
-                self.setupModelData(myPNTaxa)
                 #self.endInsertRows()
                 #sort the model
                 #self.sortItems(self.sort_column, self.sort_order, node_parent)
+        self.setupModelData()
         self.endResetModel()
 
     # def refreshFilters(self):

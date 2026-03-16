@@ -24,9 +24,6 @@ def load_ui_from_resources(ui_name):
 
 
 
-
-
-
 ##class LinkDelegate to create hyperlink of the QTreeView from Qtreeview_Json
 class LinkDelegate(QtWidgets.QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -216,11 +213,16 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
 
 
 class PN_DatabaseStatusWidget(QtWidgets.QWidget):
+    """
+        A widget to display the status of a database connection.
+    """
     clicked = pyqtSignal()
     def __init__(self, dbname = None):
         super().__init__()
         frame = QtWidgets.QFrame(self)
         frame.setStyleSheet("background-color: transparent;")
+        self.setCursor(Qt.PointingHandCursor)
+
         self.statusIndicator = QtWidgets.QWidget(frame)
         self.statusConnection = QtWidgets.QLabel(None, frame)
         self.statusIndicator.setFixedSize(10, 10)
@@ -229,6 +231,7 @@ class PN_DatabaseStatusWidget(QtWidgets.QWidget):
         frame_layout.setContentsMargins(5, 5, 5, 5)
         frame_layout.addWidget(self.statusIndicator)
         frame_layout.addWidget(self.statusConnection)
+
         self.load_status(dbname)
         self.setLayout(frame_layout)        
         self._installClickFilter(self)
@@ -239,11 +242,13 @@ class PN_DatabaseStatusWidget(QtWidgets.QWidget):
             child.installEventFilter(self)
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.MouseButtonPress:
-            if event.button() == Qt.LeftButton:
-                self.clicked.emit()
-                return True   # use the event
-
+        if event.type() == QEvent.Enter:
+            self.statusConnection.setStyleSheet("color: blue;")
+        elif event.type() == QEvent.Leave:
+            self.statusConnection.setStyleSheet(None)
+        elif event.type() == QEvent.MouseButtonPress:
+            self.clicked.emit()
+            return True
         return super().eventFilter(obj, event)
 
     def load_status (self, dbname = None):

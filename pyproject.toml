@@ -7,12 +7,13 @@ name = "florica"
 version = "0.1.0"
 description = "Software suite for managing botanical data"
 
+authors = [
+    {name = "Philippe Birnbaum",
+    email = "philippebko@yahoo.fr"}
+]
+
 readme = "README.md"
 requires-python = ">=3.10"
-
-authors = [
-    {name = "Philippe Birnbaum"}
-]
 
 dependencies = [
     "PyQt5>=5.15",
@@ -28,4 +29,21 @@ florica-nomen = "florica.nomen.app:main"
 where = ["src"]
 
 [project.urls]
-Homepage = "https://github.com/..."
+Homepage = "https://github.com/PhilippeBko/florica"
+
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+
+    "Operating System :: POSIX :: Linux",
+
+    "License :: OSI Approved :: MIT License"
+
+
+]
