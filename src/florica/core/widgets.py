@@ -14,7 +14,7 @@ def load_ui_from_resources(ui_name):
     """
     load an ui file from ressources Qt.
     """
-    file = QFile(f":/ui/{ui_name}")
+    file = QFile(f":src/florica/resources/ui/{ui_name}")
     if not file.exists():
         raise FileNotFoundError(f"UI resource not found: {ui_name}")
     file.open(QFile.ReadOnly)
@@ -280,10 +280,10 @@ class MessageBox(QtWidgets.QMessageBox):
 
         # central icon
         main_icons = {
-            QtWidgets.QMessageBox.Icon.Information: QtGui.QIcon(":/icons/information.png"),
-            QtWidgets.QMessageBox.Icon.Warning: QtGui.QIcon(":/icons/warning.png"),
-            QtWidgets.QMessageBox.Icon.Critical: QtGui.QIcon(":/icons/critical.png"),
-            QtWidgets.QMessageBox.Icon.Question: QtGui.QIcon(":/icons/question.png"),
+            QtWidgets.QMessageBox.Icon.Information: QtGui.QIcon(":src/florica/resources/icons/information.png"),
+            QtWidgets.QMessageBox.Icon.Warning: QtGui.QIcon(":src/florica/resources/icons/warning.png"),
+            QtWidgets.QMessageBox.Icon.Critical: QtGui.QIcon(":src/florica/resources/icons/critical.png"),
+            QtWidgets.QMessageBox.Icon.Question: QtGui.QIcon(":src/florica/resources/icons/question.png"),
         }
 
         if icon in main_icons:
@@ -296,10 +296,10 @@ class MessageBox(QtWidgets.QMessageBox):
 
         # Buttons icons
         button_icons = {
-            QtWidgets.QMessageBox.StandardButton.Ok: QtGui.QIcon(":/icons/ok.png"),
-            QtWidgets.QMessageBox.StandardButton.Cancel: QtGui.QIcon(":/icons/cancel.png"),
-            QtWidgets.QMessageBox.StandardButton.Yes: QtGui.QIcon(":/icons/ok.png"),
-            QtWidgets.QMessageBox.StandardButton.No: QtGui.QIcon(":/icons/nok.png"),
+            QtWidgets.QMessageBox.StandardButton.Ok: QtGui.QIcon(":src/florica/resources/icons/ok.png"),
+            QtWidgets.QMessageBox.StandardButton.Cancel: QtGui.QIcon(":src/florica/resources/icons/cancel.png"),
+            QtWidgets.QMessageBox.StandardButton.Yes: QtGui.QIcon(":src/florica/resources/icons/ok.png"),
+            QtWidgets.QMessageBox.StandardButton.No: QtGui.QIcon(":src/florica/resources/icons/nok.png"),
         }
 
         for std_button, icon_btn in button_icons.items():
@@ -431,9 +431,9 @@ class PostgresConfigDialog(QtWidgets.QDialog):
         self.btn_test = QtWidgets.QPushButton("Test Connexion")
         self.btn_ok = QtWidgets.QPushButton("OK")
         self.btn_cancel = QtWidgets.QPushButton("Close")
-        self.btn_ok.setIcon(QtGui.QIcon(":/icons/ok.png"))
-        self.btn_cancel.setIcon(QtGui.QIcon(":/icons/nok.png"))
-        self.btn_test.setIcon(QtGui.QIcon(":/icons/test.png"))
+        self.btn_ok.setIcon(QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        self.btn_cancel.setIcon(QtGui.QIcon(":src/florica/resources/icons/nok.png"))
+        self.btn_test.setIcon(QtGui.QIcon(":src/florica/resources/icons/test.png"))
         self.btn_ok.setEnabled(False)
         btn_layout.addStretch()
         btn_layout.addWidget(self.btn_test)

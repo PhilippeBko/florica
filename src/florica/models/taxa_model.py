@@ -483,7 +483,7 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         model = QtGui.QStandardItemModel()
         #model.setHorizontalHeaderLabels(['Rank', 'Taxon'])
-        self.setModel(model)   
+        self.setModel(model)
     
     def setdata(self, myPNTaxa, currentIdtaxonref = None):
 # Get the hierarchy for the selected taxa
@@ -587,8 +587,8 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         button_OK.rejected.connect (self.close)
         button_apply = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
         button_close = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Close)        
-        button_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        button_close.setIcon (QtGui.QIcon(":/icons/nok.png"))
+        button_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        button_close.setIcon (QtGui.QIcon(":src/florica/resources/icons/nok.png"))
         button_apply.setEnabled(False)
         button_apply.clicked.connect(self.apply)
         #set the model to the treeview_childs
@@ -1070,8 +1070,8 @@ class PNTaxa_edit(QtWidgets.QMainWindow):
         button_apply = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
         button_close = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Close)
 
-        button_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        button_close.setIcon (QtGui.QIcon(":/icons/nok.png"))
+        button_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        button_close.setIcon (QtGui.QIcon(":src/florica/resources/icons/nok.png"))
 
         button_apply.setEnabled(False)
         button_apply.clicked.connect(self.apply)
@@ -1185,8 +1185,8 @@ class PNTaxa_merge(QtWidgets.QMainWindow):
 
         button_apply = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
         button_close = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Close)        
-        button_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        button_close.setIcon (QtGui.QIcon(":/icons/nok.png"))
+        button_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        button_close.setIcon (QtGui.QIcon(":src/florica/resources/icons/nok.png"))
 
         button_apply.clicked.connect (self.accept) 
         button_close.clicked.connect (self.close)
@@ -1732,8 +1732,8 @@ class PNSynonym_edit (QtWidgets.QWidget):
         
         self.button_apply = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
         button_close = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Close)        
-        self.button_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        button_close.setIcon (QtGui.QIcon(":/icons/nok.png"))
+        self.button_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        button_close.setIcon (QtGui.QIcon(":src/florica/resources/icons/nok.png"))
 
         self.myPNSynonym = myPNSynonym
         self.treeview_searchtaxa = None

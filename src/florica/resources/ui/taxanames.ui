@@ -20,7 +20,7 @@
    <string>Taxonomy manager</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../_ressources.qrc">
+   <iconset>
     <normaloff>:/icons/x-nomen.png</normaloff>:/icons/x-nomen.png</iconset>
   </property>
   <property name="autoFillBackground">
@@ -416,8 +416,8 @@
                  <string>Add</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../_ressources.qrc">
-                  <normaloff>:/icons/add.png</normaloff>:/icons/add.png</iconset>
+                 <iconset resource="../../../../_ressources.qrc">
+                  <normaloff>:/src/florica/resources/icons/add.png</normaloff>:/src/florica/resources/icons/add.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -445,8 +445,8 @@
                  <string>Edit</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../_ressources.qrc">
-                  <normaloff>:/icons/editing.png</normaloff>:/icons/editing.png</iconset>
+                 <iconset resource="../../../../_ressources.qrc">
+                  <normaloff>:/src/florica/resources/icons/editing.png</normaloff>:/src/florica/resources/icons/editing.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -474,8 +474,8 @@
                  <string>Merge</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../_ressources.qrc">
-                  <normaloff>:/icons/merge.png</normaloff>:/icons/merge.png</iconset>
+                 <iconset resource="../../../../_ressources.qrc">
+                  <normaloff>:/src/florica/resources/icons/merge.png</normaloff>:/src/florica/resources/icons/merge.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -519,8 +519,8 @@
                  <string>Remove</string>
                 </property>
                 <property name="icon">
-                 <iconset resource="../_ressources.qrc">
-                  <normaloff>:/icons/remove.png</normaloff>:/icons/remove.png</iconset>
+                 <iconset resource="../../../../_ressources.qrc">
+                  <normaloff>:/src/florica/resources/icons/remove.png</normaloff>:/src/florica/resources/icons/remove.png</iconset>
                 </property>
                 <property name="iconSize">
                  <size>
@@ -602,8 +602,8 @@
               <string>Add</string>
              </property>
              <property name="icon">
-              <iconset resource="../_ressources.qrc">
-               <normaloff>:/icons/plus.png</normaloff>:/icons/plus.png</iconset>
+              <iconset resource="../../../../_ressources.qrc">
+               <normaloff>:/src/florica/resources/icons/plus.png</normaloff>:/src/florica/resources/icons/plus.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -640,8 +640,8 @@
               <string>Edit</string>
              </property>
              <property name="icon">
-              <iconset resource="../_ressources.qrc">
-               <normaloff>:/icons/pen.png</normaloff>:/icons/pen.png</iconset>
+              <iconset resource="../../../../_ressources.qrc">
+               <normaloff>:/src/florica/resources/icons/pen.png</normaloff>:/src/florica/resources/icons/pen.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -660,8 +660,8 @@
               <string>Remove</string>
              </property>
              <property name="icon">
-              <iconset resource="../_ressources.qrc">
-               <normaloff>:/icons/delete.png</normaloff>:/icons/delete.png</iconset>
+              <iconset resource="../../../../_ressources.qrc">
+               <normaloff>:/src/florica/resources/icons/delete.png</normaloff>:/src/florica/resources/icons/delete.png</iconset>
              </property>
              <property name="iconSize">
               <size>
@@ -705,8 +705,8 @@
               <string>Refresh</string>
              </property>
              <property name="icon">
-              <iconset resource="../_ressources.qrc">
-               <normaloff>:/icons/refresh.png</normaloff>:/icons/refresh.png</iconset>
+              <iconset resource="../../../../_ressources.qrc">
+               <normaloff>:/src/florica/resources/icons/refresh.png</normaloff>:/src/florica/resources/icons/refresh.png</iconset>
              </property>
             </widget>
            </item>
@@ -815,7 +815,7 @@
   </action>
  </widget>
  <resources>
-  <include location="../_ressources.qrc"/>
+  <include location="../../../../_ressources.qrc"/>
  </resources>
  <connections/>
 </ui>

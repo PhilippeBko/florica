@@ -1,11 +1,11 @@
 # ruff: noqa: E402
 
 #add icon.names in _icons.qrc then
-#pyrcc5 _ressources.qrc -o src/florica/core/ressources.py
+#pyrcc5 _ressources.qrc -o src/florica/core/resources.py
 
 
 import os
-os.environ["QT_LOGGING_RULES"] = "qt.qpa.*=false"
+#os.environ["QT_LOGGING_RULES"] = "qt.qpa.*=false"
 
 import sys
 
@@ -15,8 +15,7 @@ import re
 import time
 # Third-party
 from PyQt5 import QtCore, QtGui, QtWidgets
-#print("Répertoire de travail actuel :", os.getcwd())
-from florica.core import ressources  # noqa: F401
+from florica.core import resources  # noqa: F401
 #import taxa_occ.core.ressources
 
 # Internal modules
@@ -321,10 +320,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_checked.setCheckState(QtCore.Qt.PartiallyChecked)
 
     #set the buttons icons
-        self.buttonbox_filter_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        self.buttonbox_filter_reset.setIcon (QtGui.QIcon(":/icons/refresh.png"))
-        self.button_properties_apply.setIcon (QtGui.QIcon(":/icons/ok.png"))
-        self.button_properties_cancel.setIcon (QtGui.QIcon(":/icons/nok.png"))
+        self.buttonbox_filter_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        self.buttonbox_filter_reset.setIcon (QtGui.QIcon(":src/florica/resources/icons/refresh.png"))
+        self.button_properties_apply.setIcon (QtGui.QIcon(":src/florica/resources/icons/ok.png"))
+        self.button_properties_cancel.setIcon (QtGui.QIcon(":src/florica/resources/icons/nok.png"))
 
     #set the toolbox icon style
         index = self.toolBox.currentIndex()
@@ -340,10 +339,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_toolbox_click(self, index):
         #set the icons to the toolbox and emit a signal
-        self.toolBox.setItemIcon(index, QtGui.QIcon(":/icons/arrow2.png"))
+        self.toolBox.setItemIcon(index, QtGui.QIcon(":src/florica/resources/icons/arrow2.png"))
         for i in range(3):
             if i != index:
-                self.toolBox.setItemIcon(i, QtGui.QIcon(":/icons/arrow1.png"))
+                self.toolBox.setItemIcon(i, QtGui.QIcon(":src/florica/resources/icons/arrow1.png"))
         self.toolbox_click.emit(index)
     
     def set_ui_enabled(self, enabled: bool):
@@ -546,6 +545,23 @@ class MainWindowController:
         actions[_selected_item].setChecked(True)
         self.view.set_rankgroup_text(menu_items[_selected_item])
 
+    @property
+    def trview_taxonref_selectedItem(self):
+        #transform the current index from proxy model to source model and return the selecteditem
+        proxy_index = self.trview_taxonref.currentIndex()
+        source_index = self.proxy_model.mapToSource(proxy_index)
+        return self.proxy_model.sourceModel().data(source_index, QtCore.Qt.UserRole)
+    @trview_taxonref_selectedItem.setter
+    def trview_taxonref_selectedItem(self, id_taxonref):
+        #transform the selecteditem from source model to proxy model and set the current index
+        model = self.proxy_model.sourceModel()
+        index = model.indexItem(id_taxonref)
+        index = self.proxy_model.mapFromSource(index)
+        if index.isValid():
+            self.trview_taxonref.selectionModel().setCurrentIndex(index, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)        
+        return
+
+
     def on_filter_toggled(self, state: bool):
         #hide/show filter Frame
         self.view.set_filter_visible(state)
@@ -560,7 +576,7 @@ class MainWindowController:
             item = "Diffnes"
     #to change the theme        
         try:
-            qss_path = f":/ui/{item}.qss"
+            qss_path = f":src/florica/resources/qss/{item}.qss"
             file = QtCore.QFile(qss_path)
             if not file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
                 raise RuntimeError(file.errorString())
@@ -750,20 +766,35 @@ class MainWindowController:
             #refresh the tlview_taxonref if rank is include into the view (grouped_idrank or higher)
             #if idrank >= self.get_idrankGroup():
 
+        #print (self.window.sender().PNTaxa.taxaname, self.trView_hierarchy.selecteditem().taxaname)
+        selecteditem = self.trView_hierarchy.selecteditem()
+        idtaxonref = selecteditem.idtaxonref
         #refresh nodes in the treeview model
         self.trview_taxonref_refresh(ls_dict_tosave)
         #get the selecteditem from the trview_taxonref.model
-        selecteditem = self.trview_taxonref_selectedItem()
-           
-        idtaxonref = ls_dict_tosave[0].get("id_taxonref", self.window.sender().PNTaxa.idtaxonref)
-        #if no selection, create a new PNTaxa_with_Score to be sure to get hierarchy of item
-        if selecteditem is None:
-            selecteditem = PNTaxa_with_Score(idtaxonref)
+        # selecteditem = None #self.trview_taxonref_selectedItem #()
+        
+        # idtaxonref = ls_dict_tosave[0].get("id_taxonref", self.window.sender().PNTaxa.idtaxonref)
+
+        # idtaxonref = self.window.sender().PNTaxa.idtaxonref
+
+        # #if no selection, create a new PNTaxa_with_Score to be sure to get hierarchy of item
+        # #if selecteditem is None:
+        #     #selecteditem = PNTaxa_with_Score(idtaxonref)
+        # selecteditem = self.trView_hierarchy.selecteditem()
+
+        ls_hierarchy = selecteditem.list_hierarchy
+        for item in ls_hierarchy:
+            if item["id_rank"] == self.get_idrankGroup():
+                self.trview_taxonref_selectedItem = item["id_taxonref"]
+                selecteditem = self.trview_taxonref_selectedItem
+                break
+
+
         #set and select the item in the trView_hierarchy, with idtaxonref as selected item
         if selecteditem:
             #ensure to see the idtaxonref
             self.trView_hierarchy.setdata (selecteditem, idtaxonref)
-            
         #efresh the sender PNTaxa_edit or PNTaxa_add
         self.window.sender().PNTaxa = self.trView_hierarchy.selecteditem()
         self.window.sender().refresh()
@@ -990,11 +1021,7 @@ class MainWindowController:
 
 
 
-    def trview_taxonref_selectedItem(self):
-        #transform the current index from proxy model to source model and return the selecteditem
-        proxy_index = self.trview_taxonref.currentIndex()
-        source_index = self.proxy_model.mapToSource(proxy_index)
-        return self.proxy_model.sourceModel().data(source_index, QtCore.Qt.UserRole)
+
 
     def trview_taxonref_click(self):
     #set the hierarchy, names, metadata and properties of the selected taxa
@@ -1008,7 +1035,7 @@ class MainWindowController:
                     self.trview_identity_apply()
         
         # get the current selectedItem      
-        selecteditem = self.trview_taxonref_selectedItem()
+        selecteditem = self.trview_taxonref_selectedItem #()
         if selecteditem is None:
             return
         #selecteditem.id_taxonref = 166666666
@@ -1017,17 +1044,23 @@ class MainWindowController:
         self.trView_hierarchy.setdata (selecteditem)
 
 
-
-
     def trview_taxonref_dblclick(self, current_index):
         # Select or insert the selecteditem into the combo_taxa combobox for shortcut
         #selecteditem = self.trview_taxonref.model().data(current_index, QtCore.Qt.UserRole)
-        selecteditem = self.trview_taxonref_selectedItem()
+        selecteditem = self.trview_taxonref_selectedItem #()
         if selecteditem:
             self.combo_taxa_selectedItem(selecteditem)
 
     def trview_taxonref_refresh(self, dict_torefresh):
+        #selected_item = self.trview_taxonref_selectedItem #()
         self.trview_taxonref_setData()
+        # id_taxonref = dict_torefresh[0]['id_taxonref']
+        # self.trview_taxonref_selectedItem = selected_item.id_taxonref
+        # model = self.proxy_model.sourceModel()
+        # index = model.indexItem(selected_item.id_taxonref)
+        # index = self.proxy_model.mapFromSource(index)
+        # if index.isValid():
+        #     self.trview_taxonref.selectionModel().setCurrentIndex(index, QtCore.QItemSelectionModel.ClearAndSelect | QtCore.QItemSelectionModel.Rows)        
         return
 
     #refresh (update) the trview_taxonref model according to the database for a list of idtaxonref (refresh taxa + childs)
@@ -1119,6 +1152,7 @@ class MainWindowController:
         self.proxy_model.children_only = children_only
         self.proxy_model.invalidateFilter()
         self.trview_taxonref.repaint()
+        
         #reset the current index
         selected_index = self.trview_taxonref.currentIndex()
         if not selected_index.isValid():
@@ -1240,7 +1274,7 @@ class MainWindowController:
                         self.trview_taxonref_refresh([idtaxonref])
                     
                     #get the selecteditem from the trview_taxonref.model
-                    selecteditem = self.trview_taxonref_selectedItem()
+                    selecteditem = self.trview_taxonref_selectedItem #()
                     #if not found, create a new PNTaxa_with_Score
                     if selecteditem is None:
                         selecteditem = PNTaxa_with_Score(idtaxonref) #, False, False)
@@ -1464,7 +1498,7 @@ class MainWindowController:
     def refresh_ui_label_taxa(self):
     #Refresh the taxa label with the current trview_taxonref selected item
         self.view.set_taxa_label("< No Selection >")
-        selecteditem = self.trview_taxonref_selectedItem()
+        selecteditem = self.trview_taxonref_selectedItem #()
         if selecteditem is None:
             return
         child_count = self.proxy_model.rowCount(self.trview_taxonref.currentIndex())

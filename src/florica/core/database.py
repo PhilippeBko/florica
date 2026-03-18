@@ -97,7 +97,7 @@ class DatabaseConnection:
     # Schema is not present, execute sql scripts to create tables, indexes, functions, triggers
             scripts = ['create_schema_taxonomy.sql','config_schema_taxonomy.sql']
             for script_path in scripts:
-                file = QFile(f":/sql/{script_path}")
+                file = QFile(f":src/florica/resources/sql/{script_path}")
                 if not file.open(QFile.ReadOnly | QFile.Text):
                     raise RuntimeError(f"Error in opening : {script_path}")
                 stream = QTextStream(file)
