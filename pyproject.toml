@@ -8,8 +8,7 @@ version = "0.1.0"
 description = "Software suite for managing botanical data"
 
 authors = [
-    {name = "Philippe Birnbaum",
-    email = "philippebko@yahoo.fr"}
+    {name = "Philippe Birnbaum", email = "philippebko@yahoo.fr"}
 ]
 
 readme = "README.md"
@@ -20,16 +19,6 @@ dependencies = [
     "requests>=2.32",
     "beautifulsoup4>=4.12"
 ]
-
-[project.gui-scripts]
-# florica-nomen, to manage plant names
-florica-nomen = "florica.nomen.app:main"
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[project.urls]
-Homepage = "https://github.com/PhilippeBko/florica"
 
 classifiers = [
     "Intended Audience :: Science/Research",
@@ -45,5 +34,16 @@ classifiers = [
 
     "License :: OSI Approved :: MIT License"
 
-
 ]
+
+[project.gui-scripts]
+# florica-nomen, to manage plant names
+florica-nomen = "florica.nomen.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://github.com/PhilippeBko/florica"
+
+
