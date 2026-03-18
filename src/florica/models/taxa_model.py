@@ -484,18 +484,20 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
         model = QtGui.QStandardItemModel()
         #model.setHorizontalHeaderLabels(['Rank', 'Taxon'])
         self.setModel(model)
+        self.ls_hierarchy = None
     
     def setdata(self, myPNTaxa, currentIdtaxonref = None):
 # Get the hierarchy for the selected taxa
         model = self.model()
         model.clear()
+        self.ls_hierarchy = None
         
-        ls_hierarchy = myPNTaxa.list_hierarchy
-        if not ls_hierarchy:
+        self.ls_hierarchy = myPNTaxa.list_hierarchy
+        if not self.ls_hierarchy:
             return
         
         ls_pn_taxa = []
-        for item in ls_hierarchy:
+        for item in self.ls_hierarchy:
             id_taxonref = item['id_taxonref']
             idrank = item['id_rank']
             taxaname = item['taxaname'].strip()

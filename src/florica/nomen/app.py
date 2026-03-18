@@ -765,16 +765,25 @@ class MainWindowController:
             #idrank = max(obj["id_rank"] for obj in ls_dict_tosave)
             #refresh the tlview_taxonref if rank is include into the view (grouped_idrank or higher)
             #if idrank >= self.get_idrankGroup():
+        if not ls_item_updated:
+            return
 
-        #print (self.window.sender().PNTaxa.taxaname, self.trView_hierarchy.selecteditem().taxaname)
-        selecteditem = self.trView_hierarchy.selecteditem()
-        idtaxonref = selecteditem.idtaxonref
-        #refresh nodes in the treeview model
-        self.trview_taxonref_refresh(ls_dict_tosave)
+        #get the selected id_taxonref
+        # selecteditem = self.trView_hierarchy.selecteditem()
+        # if selecteditem is None:
+        
+        selecteditem = self.window.sender().PNTaxa
+        idtaxonref = selecteditem.idtaxonref 
+        ls_hierarchy = selecteditem.list_hierarchy
+
+        #refresh data in trview_taxonref
+        self.trview_taxonref_setData()
+
+        #self.trview_taxonref_refresh(ls_dict_tosave)
         #get the selecteditem from the trview_taxonref.model
         # selecteditem = None #self.trview_taxonref_selectedItem #()
         
-        # idtaxonref = ls_dict_tosave[0].get("id_taxonref", self.window.sender().PNTaxa.idtaxonref)
+        #idtaxonref = ls_dict_tosave[0].get("id_taxonref", self.window.sender().PNTaxa.idtaxonref)
 
         # idtaxonref = self.window.sender().PNTaxa.idtaxonref
 
@@ -782,8 +791,9 @@ class MainWindowController:
         # #if selecteditem is None:
         #     #selecteditem = PNTaxa_with_Score(idtaxonref)
         # selecteditem = self.trView_hierarchy.selecteditem()
+        # idtaxonref = selecteditem.idtaxonref
 
-        ls_hierarchy = selecteditem.list_hierarchy
+        #get the hierarchy of the selecteditem
         for item in ls_hierarchy:
             if item["id_rank"] == self.get_idrankGroup():
                 self.trview_taxonref_selectedItem = item["id_taxonref"]
@@ -1041,7 +1051,7 @@ class MainWindowController:
         #selecteditem.id_taxonref = 166666666
     #set the treetaxonomy hierarchy
         #if selecteditem.id_taxonref !=self.trView_hierarchy.selecteditem().id_taxonref:
-        self.trView_hierarchy.setdata (selecteditem)
+        self.trView_hierarchy.setdata (selecteditem, selecteditem.id_taxonref)
 
 
     def trview_taxonref_dblclick(self, current_index):
