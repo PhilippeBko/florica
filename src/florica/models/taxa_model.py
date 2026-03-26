@@ -20,6 +20,11 @@ def db_taxa():
 
 # Main classe to store a taxaname with some properties
 class PNTaxa(object):
+    """
+    Main class to store a taxaname with associated properties and methods
+    Fill data from database, if only id_taxonref is provided 
+    Properties return values from database considering idtaxonref
+    """
     def __init__(self, idtaxonref, taxaname = None, authors = None, idrank= None, published = None, accepted = None):
         self.id_taxonref = idtaxonref
         self.dict_species = None
@@ -31,34 +36,34 @@ class PNTaxa(object):
             self.published = published
             self.accepted = accepted
         else:
-            self.fill_from_dbase()
+            dict_taxa = db_taxa().db_get_taxon(self.id_taxonref)
+            if dict_taxa is not None:
+                self.taxaname = dict_taxa.get("taxaname", None)
+                self.authors = dict_taxa.get("authors", None)
+                self.id_rank = dict_taxa.get("id_rank", None)
+                self.published = dict_taxa.get("published", None)
+                self.accepted = dict_taxa.get("accepted", None)
+                self.id_parent = dict_taxa.get("id_parent", None)
 
 
     def _part_name(self, fieldname):
-        #create the dictionnary of species parts if not yet done
+        #create the dictionary of species parts if not yet done
         if self.dict_species is None:
             self.dict_species = functions.get_dict_from_species(self.taxonref)
         if self.dict_species is None:
             self.dict_species = {}
-        #search and return the part (ex: basename, name, autonym, authors,...) from the dictionnary
+        #search and return the part (ex: basename, name, autonym, authors,...) from the dictionary
         if fieldname in self.dict_species:
             return self.dict_species[fieldname]
         else:
             return None
         
-    def fill_from_dbase(self):
-        """fill the class with values from the database according to the id_taxonref"""
-        dict_taxa = db_taxa().db_get_taxon(self.id_taxonref)
-        if dict_taxa is not None:
-            self.taxaname = dict_taxa.get("taxaname", None)
-            self.authors = dict_taxa.get("authors", None)
-            self.id_rank = dict_taxa.get("id_rank", None)
-            self.published = dict_taxa.get("published", None)
-            self.accepted = dict_taxa.get("accepted", None)
-            self.id_parent = dict_taxa.get("id_parent", None)
 
     @property
     def idtaxonref(self):
+        """
+        Returns the id_taxonref, 0 if errors
+        """
         try:
             return int(self.id_taxonref)
         except Exception:
@@ -66,6 +71,9 @@ class PNTaxa(object):
 
     @property
     def rank_name (self):
+        """
+        Returns the name of the rank according to id_rank
+        """
         try :
             txt_rk = db_taxa().db_get_rank(self.id_rank, 'rank_name')
         except Exception:
@@ -74,6 +82,9 @@ class PNTaxa(object):
 
     @property
     def id_rankparent (self):
+        """
+        Returns the id_rankparent (= the required parent rank) of a taxon based on id_rank
+        """
         try :
             id_rp = db_taxa().db_get_rank(self.id_rank, 'id_rankparent')
         except Exception:
@@ -82,6 +93,9 @@ class PNTaxa(object):
 
     @property
     def taxonref(self):
+        """
+        Returns the taxonref (taxaname + authors) of a taxon
+        """
         try :
             return " ".join([self.taxaname,self.authors]).strip()
         except Exception:
@@ -89,18 +103,27 @@ class PNTaxa(object):
 
     @property
     def isautonym (self):
+        """
+        Returns True if the taxa is an autonym for variety and subspecies
+        """
         if self.id_rank not in [22,23]:
             return False
         return self._part_name ("autonym")
 
     @property
     def basename (self):
+        """
+        Returns the basic name of a taxon (not a compound one)
+        """
         if self.id_rank < 21:
             return self.taxaname.lower()
         return self._part_name ("basename")
 
     @property
     def simple_taxaname (self):
+        """
+        Returns the simple taxaname of a taxon (with no authors if infraspecies)
+        """
         if self.id_rank < 21:
             return self.taxaname
         return self._part_name ("name")
@@ -108,51 +131,51 @@ class PNTaxa(object):
     @property
     def json_names(self):
         """     
-        Return a json (dictionnary of sub-dictionnaries) of the set of names for a id_taxonref
+        Returns a json (dictionary) of all names grouped by category
         """
         return db_taxa().db_get_names(self.idtaxonref)
 
     @property 
     def json_metadata (self):
         """     
-        Return a json (dictionnary of sub-dictionnaries) of for metadata from a id_taxonref
+        Returns a json (dictionary of sub-dictionaries) for metadata(jsonb)
         """              
         return db_taxa().db_get_metadata(self.idtaxonref)
     
     @property
     def json_properties_count(self):
         """     
-        Return a json (dictionnary of sub-dictionnaries) of the count of taxa properties(jsonb) from a id_taxonref = sum (json_properties) of child taxa
+        Returns a json (dictionary of sub-dictionaries) of the count of taxa properties(jsonb) from child taxa
         """        
         return db_taxa().db_get_properties_count(self.idtaxonref)
 
     @property
     def json_properties(self):
         """     
-        Return a json (dictionnary of sub-dictionnaries of a taxon properties(jsonb) for a id_taxonref
+        Returns a json (dictionary of sub-dictionaries) for properties(jsonb)
         """
         return db_taxa().db_get_properties(self.idtaxonref)
 
     @property
     def list_hierarchy(self):
         """     
-        Return a json (dictionnary of sub-dictionnaries) of hierarchy (parent + childs) for a id_taxonref
+        Returns a list of taxa-dictionary ordered from Plantae to children
         """
-        ls_hierarchy = db_taxa().db_get_list_hierarchy(self.idtaxonref, self.id_rank)
-        return ls_hierarchy
+        return db_taxa().db_get_list_hierarchy(self.idtaxonref)
 
     @property
     def valid_parents(self):
-        ls_valid_parents = db_taxa().db_get_valid_parents(self.idtaxonref)
-        return ls_valid_parents
+        """
+        Returns a dictionary of valid parents of the taxon for moving
+        """
+        return db_taxa().db_get_valid_parents(self.idtaxonref)
 
     @property
     def valid_merges(self):
-        ls_valid_sibling = db_taxa().db_get_valid_merges(self.idtaxonref)
-        return ls_valid_sibling
-
-
-
+        """
+        Returns a dictionary of valid sibling of the taxon for merging
+        """
+        return db_taxa().db_get_valid_merges(self.idtaxonref)
 
 #class to represent taxa with scoring information
 class PNTaxa_with_Score(PNTaxa):
@@ -161,26 +184,23 @@ class PNTaxa_with_Score(PNTaxa):
         super().__init__(idtaxonref, taxaname, authors, idrank, published, accepted)
         self.taxaname_score = None
         self.authors_score = None
-        self.api_total = 0
         self.visible = True
 
     @property
     def taxaname_percent(self):
-        if self.taxaname_score is not None:
-            # if self.taxaname_score == 0:
-            #     return "Not Found"
+        """Returns the taxaname score in percentage"""
+        try:
             return str(round(100 * self.taxaname_score, 1)) + "%"
-        else: 
+        except Exception:
             return None
+        
     @property
     def authors_percent(self):
-        if self.authors_score is not None:
-            # if self.authors_score == 0:
-            #     return "Not Found"
+        """Returns the authors score in percentage"""
+        try:
             return str(round(100 * self.authors_score, 1)) + "%"
-        else: 
+        except Exception:
             return None
-
 
 class PN_TaxaSearch(QtWidgets.QWidget):
     """
@@ -291,8 +311,6 @@ class PN_TaxaSearch(QtWidgets.QWidget):
             self.treeview_scoretaxa.header().setStretchLastSection(False)
             self.treeview_scoretaxa.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             self.treeview_scoretaxa.header().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
-
-
 
 #class to search taxa through API
 class PNTaxa_searchAPI (QtCore.QThread):
@@ -408,7 +426,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
             #delete None values
             if _json:
                 if "query time" in _json:
-                    del _json["query time"] #delete query time for each json, use a common query_time in _score dictionnary
+                    del _json["query time"] #delete query time for each json, use a common query_time in _score dictionary
                 _json = {k: v for k, v in _json.items() if v is not None}
             
             #add synonyms if exists and emit intermediate signal
@@ -431,7 +449,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
             if not _json:
                 _json = {"error": "No results", "url":result.API_url}
             _json = _json.copy()
-            #create score dictionnary
+            #create score dictionary
             _score["taxaname_score"] = total_match / total_checked if total_checked > 0 else 0
             _score["authors_score"] = total_fullname / total_authors if total_authors > 0 else 0
             #emit intermediate signal
@@ -443,7 +461,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
                 return
             time.sleep(0.2)
         #emit final signal
-        #create score dictionnary
+        #create score dictionary
         _score["taxaname_score"] = total_match / total_checked if total_checked > 0 else 0
         _score["authors_score"] = total_fullname / total_authors if total_authors > 0 else 0
         _list_api["score"] = _score
@@ -452,12 +470,10 @@ class PNTaxa_searchAPI (QtCore.QThread):
             
 
 
-    @property 
-    def total_api_calls(self):
-        return (self.status-1)
-        _total_api_servers = len(self.list_api)
-        if _total_api_servers > 0:
-            return int(100 * (self.status-1) / _total_api_servers)
+    # @property 
+    # def total_api_calls(self):
+    #     return (self.status-1)
+    
 
 #class to display a treeview with hiercharchical taxonomy
 class PNTaxa_QTreeView(QtWidgets.QTreeView):
@@ -465,29 +481,19 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
     The PNTaxa_QTreeView class is a custom class that inherits from QtWidgets.QTreeView.
     It is designed to display a hierarchical taxonomic structure.
     The class takes a PNTaxa object as input to define the taxonomic hierarchy.
-
-    Attributes:
-        None
-
-    Methods:
-        __init__ : Initializes the tree view window, disabling editing capabilities.
-        setdata : Defines the taxonomic hierarchy based on a PNTaxa object. It creates a SQL query to retrieve the hierarchy, executes the query, and populates the tree view with the results.
-        selecteditem : Returns a PNTaxa object corresponding to the selected item in the tree view.
-
-    Notes:
-        The setdata method is the primary method of the class, as it retrieves and populates the taxonomic hierarchy from a PNTaxa object.
-        The selecteditem method is a convenience function to retrieve the data of the selected item as a PNTaxa object.
     """
     def __init__(self):
+        """Initializes the tree view window, disabling editing capabilities."""
         super().__init__()
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         model = QtGui.QStandardItemModel()
-        #model.setHorizontalHeaderLabels(['Rank', 'Taxon'])
         self.setModel(model)
         self.ls_hierarchy = None
     
     def setdata(self, myPNTaxa, currentIdtaxonref = None):
-# Get the hierarchy for the selected taxa
+        """Populates the treeview with the taxonomic hierarchy based on a PNTaxa object"""
+        #It creates a SQL query to retrieve the hierarchy, executes the query, and populates the tree view with the results."""
+        # Get the hierarchy for the selected taxa
         model = self.model()
         model.clear()
         self.ls_hierarchy = None
@@ -505,9 +511,11 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
             published = item['published']
             accepted = item['accepted']
             idparent = item['id_parent']
-            pn_item = PNTaxa(id_taxonref, taxaname, authors, idrank, published, accepted)
+            #print (db_taxa().db_get_rank(idrank, "rank_name"))
+            pn_item = PNTaxa_with_Score(id_taxonref, taxaname, authors, idrank, published, accepted)
             pn_item.id_parent = idparent
             ls_pn_taxa.append(pn_item)
+
 
         dict_idtaxonref = {}
         for item in ls_pn_taxa:
@@ -517,7 +525,7 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
             dict_idtaxonref[item.idtaxonref] = [QtGui.QStandardItem(_itemrank), QtGui.QStandardItem(item.taxonref)]
 
         for item in ls_pn_taxa:
-            #search for a parent_item in the dictionnary of item index on id_taxonref
+            #search for a parent_item in the dictionary of item index on id_taxonref
             item_parent = dict_idtaxonref.get(item.id_parent, None)
             item_taxon = dict_idtaxonref.get(item.idtaxonref, None)
             #append as child or root
@@ -562,15 +570,37 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
         self.expandAll()
 
     def selecteditem(self):
-        #return a PNTaxa for the selected item into the hierarchical model
-        return self.currentIndex().siblingAtColumn(0).data(Qt.UserRole)
-
-
-
-
+        """
+        Returns the selected PNTaxa from the hierarchical model
+        """
+        try:
+            return self.currentIndex().siblingAtColumn(0).data(Qt.UserRole)
+        except:
+            return None
 
 #class to add a taxon
 class PNTaxa_add(QtWidgets.QMainWindow):
+    """
+    A class that represents an add window for taxonomic data.
+    This class inherits from `QtWidgets.QMainWindow` and provides a user interface for adding new taxonomic records.
+
+    Attributes:
+        myPNTaxa (PNTaxa): An instance of the `PNTaxa` class that provides access to the taxonomic data.
+        table_taxa (QTableView): A `QTableView` widget that displays the taxonomic data in a tabular format.
+        updated (bool): A flag indicating whether the taxon has been updated.
+
+    Methods:
+        __init__(self, myPNTaxa: PNTaxa):
+            Initializes the `PNTaxa_add` instance with the given `myPNTaxa`.
+        show(self):
+            Shows the add window.
+        close(self):
+            Closes the add window.
+        apply(self):
+            Valid the form and emit signal apply_signal with a taxa-dictionary (dict_tosave).
+        apply_signal(self):
+            Emitted when the apply button is clicked.
+    """
     apply_signal  = pyqtSignal(object)
     def __init__(self, myPNTaxa): 
         super().__init__()
@@ -602,7 +632,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         #manage the combo_group
         self.window.combo_group.addItem("All names")
         self.window.combo_group.addItem(myPNTaxa.taxaname)
-        lst = db_taxa().db_get_apg4_clades()
+        lst = db_taxa().db_get_clades()
         for clade in lst:
             self.window.combo_group.addItem(clade)
         self.window.combo_group.setCurrentIndex(1)
@@ -621,7 +651,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             self.window.tabWidget_main.addTab(QtWidgets.QWidget(), api_class.title())
 
         #manage slot and signals
-        self.window.tabWidget_main.currentChanged.connect(self.alter_category)
+        self.window.tabWidget_main.currentChanged.connect(self.on_tabWidget_click)
         self.window.basenameLineEdit.textChanged.connect (self.taxaLineEdit_setdata)
         self.window.authorsLineEdit.textChanged.connect (self.taxaLineEdit_setdata)
         self.window.rankComboBox.activated.connect(self.taxaLineEdit_setdata)
@@ -673,7 +703,6 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         newbasename = newbasename.lower()
         parentname = self.PNTaxa.taxaname
         published = self.window.checkBox_published.isChecked()
-        #accepted = self.window.checkBox_accepted.isChecked()
         if len(newauthors) == 0:
             ined = ' ined.'
         elif published:
@@ -682,11 +711,8 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             ined = ' ined.'
         taxa =''
         try:
-            #_prefix = ''
             id_rank = self.window.rankComboBox.itemData(self.window.rankComboBox.currentIndex())
             _prefix = db_taxa().db_get_rank(id_rank, 'prefix') or ''
-            # if prefix:
-            #     _prefix = prefix
             taxa = f"{parentname} {_prefix} {newbasename}"
         except Exception:
             taxa = newbasename.title()
@@ -778,7 +804,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
     def refresh_category (self):
     #refresh the current category
         index = self.window.tabWidget_main.currentIndex()
-        self.alter_category(index)
+        self.on_tabWidget_click(index)
         
     def click_view_onlyNew (self, value):
         self.proxy.setOnlyCheckable(value)
@@ -786,7 +812,8 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.window.trView_childs.resizeColumnToContents(0)
         self.window.trView_childs.resizeColumnToContents(1)
 
-    def alter_category(self, index):
+    def on_tabWidget_click(self, index = None):
+        """Click on a tabWidget_main item"""
         if index is None:
             index = self.window.tabWidget_main.currentIndex()
     #change tabWidget_main item (user search or internet search)
@@ -804,7 +831,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.window.taxaLineEdit_result.setVisible(False)
         self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(False)
         QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.WaitCursor))
-        #get data (list of dictionnary) from API class function get_children"
+        #get data (list of dictionary) from API class function get_children"
         # a list of childs elements
         #exemple {"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}
         # note that the id_parent of each taxa except the first one must be in the list, if not it will excluded
@@ -835,7 +862,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             _filter = None
             if self.window.combo_group.currentIndex() > 0:
                 _filter = self.window.combo_group.currentText()
-            #get the list of dictionnaries (cf. db_get_taxa_wfo)
+            #get the list of dictionaries (cf. db_get_taxa_wfo)
             self.table_taxa = db_taxa().db_get_taxa_wfo (_filter)
         else: #use self.taxonomy_api            
             _name = self.PNTaxa.simple_taxaname
@@ -849,16 +876,16 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             msg = self.taxonomy_api._api_class.API_error
             #get children
             if result:
-                #result.getchildren is a list of dictionnary ex: [{"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}] 
+                #result.getchildren is a list of dictionary ex: [{"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}] 
                 self.table_taxa = result.get_children()
             if self.table_taxa:
                 #add mandatories fields for display and save
-                #search for existing taxaname in the dbase (return a dictionnary id_taxonref by taxaname for existing taxaname)
+                #search for existing taxaname in the dbase (return a dictionary id_taxonref by taxaname for existing taxaname)
                 names = [d["taxaname"].strip() for d in self.table_taxa]     
                 dict_id_taxonref = db_taxa().db_get_searchnames(names)
-                #add an index dictionnary to search for taxaname from id_taxonref
+                #add an index dictionary to search for taxaname from id_taxonref
                 dict_parent = {item["id"]: item["taxaname"] for item in self.table_taxa}
-                #ajust the dictionnary, add special fields
+                #ajust the dictionary, add special fields
                 for taxa in self.table_taxa:                
                     _tabtaxa = taxa["taxaname"].split()
                     taxa["id_taxonref"] = dict_id_taxonref.get(taxa["taxaname"], 0)
@@ -925,7 +952,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
                 draw_list_recursive(child, item)
 
         #browse the table_taxa to build a tree structure
-         #first create a dictionnary of parent
+         #first create a dictionary of parent
         dict_parent = {item["id"]: item for item in self.table_taxa}
         roots = []
         for taxa in self.table_taxa:
@@ -978,10 +1005,10 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.window.authorsLineEdit.setText('')
         self.window.checkBox_published.setChecked(False)
         self.window.checkBox_accepted.setChecked(False)
-
         self.draw_list()
 
     def apply(self):
+        """Valid the form, save the taxa-dictionary (dict_tosave) et emit signal apply_signal."""
     #apply add taxa
         self.updated = False        
         index = self.window.tabWidget_main.currentIndex()
@@ -1013,19 +1040,36 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         return
 
     def close(self):
+        """Close the add window."""
         self.window.close()
 
     def show(self):
+        """Show the add window."""
         self.window.show()
         self.window.exec_()
 
-
-
-
-
-
 #edit a taxa and apply by emit signal 
 class PNTaxa_edit(QtWidgets.QMainWindow):
+    """
+    A class that represents an editing window for taxonomic data.
+    This class inherits from `QtWidgets.QMainWindow` and provides a user interface for editing taxonomic data. It allows users to update existing taxonomic records.
+
+    Attributes:
+        myPNTaxa (PNTaxa): An instance of the `PNTaxa` class that provides access to the taxonomic data.
+        table_taxa (QTableView): A `QTableView` widget that displays the taxonomic data in a tabular format.
+        taxa_id (int): The ID of the taxon being edited.
+        updated (bool): A flag indicating whether the taxon has been updated.
+
+    Methods:
+        __init__(self, myPNTaxa: PNTaxa, taxa_id: int):
+            Initializes the `PNTaxa_edit` instance with the given `myPNTaxa` and `taxa_id`.
+        show(self):
+            Shows the editing window.
+        close(self):
+            Closes the editing window.
+        apply(self):
+            Applies the changes made to the taxon and updates the `myPNTaxa` instance.
+    """    
     apply_signal  = pyqtSignal(object)
     def __init__(self, myPNTaxa):
         super().__init__()
@@ -1241,89 +1285,98 @@ class PNTaxa_merge(QtWidgets.QMainWindow):
         self.window.show()
         self.window.exec_()
 
-#classes (PNTaxa_TreeModel containing PNTaxa_treeItem) to create an abstract model to display taxon with parent
+#classes (PNTaxa_treeModel containing PNTaxa_treeItem) to create an abstract model to display taxon with parent
 class PNTaxa_treeItem:
+    """
+    This class represents a tree item in the PNTaxa_treeModel abstract data model.
+    It is used to store information about a taxon and its parent-child relationship.
+    """
     def __init__(self, data, parent=None):
         self.parentItem = parent
         self.itemData = data
         self.childItems = []
+    
+
+    @property
+    def childCount(self) -> int:
+        """Returns the number of child tree items."""
+        return len(self.childItems)
+    
+    def parent(self) -> "PNTaxa_treeItem":
+        return self.parentItem
+
+    def row(self) -> int:
+        """Return the row number of the item"""
+        if self.parentItem is None:
+            return 0
+        return self.parentItem.childItems.index(self)
 
     def appendChild(self, item):
+        """Add a child to the Item"""
         self.childItems.append(item)
 
     def child(self, row):
+        """Return the child at the specified row."""
         return self.childItems[row]
 
-    def childCount(self):
-        return len(self.childItems)
 
-    def columnCount(self):
-        return 2  # Taxa Name, Authors
 
-    def data(self, column):
-        if column == 0:
-            return self.itemData.taxaname
-        elif column == 1:
-            #_authors = get(self.itemData.authors,'')
-            _authors = self.itemData.authors or ''
-            if self.itemData.isautonym:
-                _authors = '[Autonym]'
-            elif not self.itemData.published:
-                _authors += ' (ined.)' #ined.'
-            return _authors.strip()
-        return None
-
-    def parent(self):
-        return self.parentItem
-
-    def row(self):
-        try:
-            return self.parentItem.childItems.index(self)
-        except Exception:
-            return 0
-
-class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
+class PNTaxa_treeModel(QtCore.QAbstractItemModel):
+    """
+    This class represents a data model for displaying a hierarchical structure of taxa.
+    It inherits from `QtCore.QAbstractItemModel` and is designed to display taxa with their parents.
+    """
+    
     header_labels = ['Name', 'Authors']
     refresh_signal = pyqtSignal()
 
     def __init__(self, data=None, parent=None):
-        super(PNTaxa_TreeModel, self).__init__(parent)
+        super(PNTaxa_treeModel, self).__init__(parent)
         self.rootItem = PNTaxa_treeItem(None)
         self.parent_nodes = {}
         self.sort_column = 0
-        self.show_nodes_with_children_only = 0 #2 = root nodes with children only (no others options)
-        self.show_nodes_published = 1  #0=all, 1=published only, 2=unpublished only
-        self.show_nodes_accepted = 1  #0=all, 1=accepted only, 2=unaccepted only
-        self.show_nodes_checked = 1
+        self.sort_order = QtCore.Qt.AscendingOrder
+        self.items = data if data else []
+        # self.show_nodes_with_children_only = 0 #2 = root nodes with children only (no others options)
+        # self.show_nodes_published = 1  #0=all, 1=published only, 2=unpublished only
+        # self.show_nodes_accepted = 1  #0=all, 1=accepted only, 2=unaccepted only
+        # self.show_nodes_checked = 1
         # self.filter_published = None
         # self.filter_accepted = None
-        self.sort_order = QtCore.Qt.AscendingOrder
         #option to show or not orphelin taxa (not referenced into the grouped node)
-        self.show_orphelins = True
-        self.items = data if data else []
+        #self.show_orphelins = True
         #self.items = set(data) if data else set()
         #self.setupModelData()
 
 
+    # def sortItems(self, column, order=Qt.AscendingOrder, rootItem=None):
+    #     """Sorting the model items by a column (by default all the model)"""
+    #     def recursive_sort(item):
+    #         item.childItems.sort(
+    #             key=lambda i: i.data(column).lower() if isinstance(i.data(column), str) else i.data(column),
+    #             reverse=(order == Qt.DescendingOrder)
+    #         )
+    #         for child in item.childItems:
+    #             recursive_sort(child)
+    #     if not rootItem:
+    #         rootItem = self.rootItem
+    #     self.sort_column = column
+    #     self.sort_order = order
+    #     recursive_sort(rootItem)
+    #     self.layoutChanged.emit()
 
-    def sortItems(self, column, order=Qt.AscendingOrder, rootItem=None):
-    # to sort the model by a column (by default all the model)
-        def recursive_sort(item):
-            item.childItems.sort(
-                key=lambda i: i.data(column).lower() if isinstance(i.data(column), str) else i.data(column),
-                reverse=(order == Qt.DescendingOrder)
-            )
-            for child in item.childItems:
-                recursive_sort(child)
+    # def addItem(self, myPNTaxa):
+    # #add a new item to the model, NOT PERSISTENT IN DATABASE
+    # #add only id_rank >=21 with a node parent existing
+    #     #if myPNTaxa.id_rank < 21 or 
+    #     if self.getItem(myPNTaxa.id_parent) is None:
+    #         return
+    #     self.items.append(myPNTaxa)
+    #     self.setupModelData(myPNTaxa)
 
-        if not rootItem:
-            rootItem = self.rootItem
-        self.sort_column = column
-        self.sort_order = order
-        recursive_sort(rootItem)
-        self.layoutChanged.emit()
 
     def indexItem(self, idtaxonref, column=0):
+        """Return the index of the item corresponding to the idtaxonref"""
         tree_item = self.getNode (idtaxonref)
         if tree_item is None or tree_item == self.rootItem:
             return QtCore.QModelIndex()
@@ -1336,16 +1389,16 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         return self.createIndex(row, column, tree_item)
 
     def getNode(self, idtaxonref):
-    #get the TreeItem from the idtaxonref
+        """Return the node (TreeItem) corresponding to the idtaxonref"""
         return self.parent_nodes.get(idtaxonref, None)
 
     def getItem(self, idtaxonref):
-        #get the PNTaxa item from the idtaxonref
+        """Return the item (PNTaxa) corresponding to the idtaxonref"""
         TreeItem = self.getNode(idtaxonref)
-        #return the item
         return TreeItem.itemData if TreeItem else None
     
     def removeItem(self, id_taxonref):
+        """Remove the item and childs (PNTaxa) corresponding to the idtaxonref"""
         def delete_all_children(node):
             # Remove the PNTaxa_with_score from the items list
             if node.itemData in self.items:
@@ -1381,120 +1434,64 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
             parent.childItems.remove(item)
         self.endRemoveRows()
 
-    # def addItem(self, myPNTaxa):
-    # #add a new item to the model, NOT PERSISTENT IN DATABASE
-    # #add only id_rank >=21 with a node parent existing
-    #     #if myPNTaxa.id_rank < 21 or 
-    #     if self.getItem(myPNTaxa.id_parent) is None:
+    # def refresh (self, myPNTaxas = None):
+    #     #Refresh the content of the model, NOT PERSISTENT IN DATABASE
+    #     ##By default refresh the entire model (myPNTaxa = None)
+    #     #look for refresh id_taxonref if exists otherwise append the new row
+    #     #refresh the entire model if myPNTaxa is None
+    #     if myPNTaxas is None:
+    #         self.refreshData()
     #         return
-    #     self.items.append(myPNTaxa)
-    #     self.setupModelData(myPNTaxa)
-
-    def refresh (self, myPNTaxas = None):
-        #Refresh the content of the model, NOT PERSISTENT IN DATABASE
-        ##By default refresh the entire model (myPNTaxa = None)
-        #look for refresh id_taxonref if exists otherwise append the new row
-        #refresh the entire model if myPNTaxa is None
-        if myPNTaxas is None:
-            self.refreshData()
-            return
-        #ensure the myPNTaxas is a list
-        if not isinstance(myPNTaxas, list):
-            ls_myPNTaxas = [myPNTaxas]
-        else:
-            ls_myPNTaxas = myPNTaxas
-        #browse the list and refresh or add the items
-        node_parent = None
-        self.beginResetModel()
-        # self.rootItem = PNTaxa_treeItem(None)
-        # self.parent_nodes = {}
-        for myPNTaxa in ls_myPNTaxas:
-            node_parent = self.getNode(myPNTaxa.id_parent)
-            node_item = self.getNode(myPNTaxa.idtaxonref)
-            if node_item: #item already exists
-                #do not move root items
-                if node_item.parentItem is not self.rootItem:
-                    #delete if node_parent is NULL
-                    if node_parent is None:
-                        self.removeItem(myPNTaxa.idtaxonref)
-                        continue
-                    #if parent different, move the node to the new parent
-                    elif node_item.parentItem != node_parent:
-                        #delete the item from the old parent
-                        if node_item in node_item.parentItem.childItems:
-                            node_item.parentItem.childItems.remove(node_item)
-                        #set the new parent
-                        node_item.parentItem = node_parent
-                        node_parent.appendChild (node_item)
-                #swap the existing itemData with the new one in self.items and node_item
-                item = node_item.itemData
-                i = self.items.index(item)
-                self.items[i] = myPNTaxa
-                #finally change the itemData of the node_item
-                node_item.itemData = myPNTaxa
-            else: #if node_parent: #new item on an existingn parent
-                # self.beginInsertRows(
-                #     self.createIndex(node_parent.row(), 0, node_parent),
-                #     node_parent.childCount(),
-                #     node_parent.childCount()
-                # )
-                print ("add :", myPNTaxa.taxaname)
-                self.items.append(myPNTaxa)
-                #self.endInsertRows()
-                #sort the model
-                #self.sortItems(self.sort_column, self.sort_order, node_parent)
-        self.setupModelData()
-        self.endResetModel()
-
-    # def refreshFilters(self):
-    #     def match_filter(mode, value):
-    #         if mode == 1:
-    #             return True
-    #         if mode == 2:
-    #             return bool(value)
-    #         return not bool(value)
-
-    #     for item in self.items:
-    #         node = self.getNode(item.idtaxonref)
-    #         if node is None:
-    #             continue
-    #         parent = node.parentItem
-    #         # --- COMBINED FILTER ---
-    #         filters = [
-    #                     (self.show_nodes_checked, item.taxaname_score),
-    #                     (self.show_nodes_published, item.published),
-    #                     (self.show_nodes_accepted, item.accepted),
-    #                 ]
-    #         _valid = parent is self.rootItem or all(match_filter(mode, value) for mode, value in filters)
-    #         #print (_valid)
-    #         if node in parent.childItems and not _valid:
-    #             row = parent.childItems.index(node)
-    #             self.beginRemoveRows(
-    #                 self.createIndex(parent.row(), 0, parent),
-    #                 row,
-    #                 row
-    #             )
-    #             parent.childItems.pop(row)
-    #             self.endRemoveRows()
-
-    #         elif node not in parent.childItems and _valid:
-    #             row = len(parent.childItems)
-    #             self.beginInsertRows(
-    #                 self.createIndex(parent.row(), 0, parent),
-    #                 row,
-    #                 row
-    #             )
-    #             parent.appendChild(node)
-    #             self.endInsertRows()
-    #     #self. beginResetModel()
-    #     if self.show_nodes_with_children_only == 2:
-    #         self.rootItem.childItems = [it for it in self.rootItem.childItems if it.childCount() != 0]
-    #     #self.endResetModel()
-    #     self.sortItems(self.sort_column, self.sort_order, self.rootItem)
-    #                 #item.setVisible(valid_checked)
-
+    #     #ensure the myPNTaxas is a list
+    #     if not isinstance(myPNTaxas, list):
+    #         ls_myPNTaxas = [myPNTaxas]
+    #     else:
+    #         ls_myPNTaxas = myPNTaxas
+    #     #browse the list and refresh or add the items
+    #     node_parent = None
+    #     self.beginResetModel()
+    #     # self.rootItem = PNTaxa_treeItem(None)
+    #     # self.parent_nodes = {}
+    #     for myPNTaxa in ls_myPNTaxas:
+    #         node_parent = self.getNode(myPNTaxa.id_parent)
+    #         node_item = self.getNode(myPNTaxa.idtaxonref)
+    #         if node_item: #item already exists
+    #             #do not move root items
+    #             if node_item.parentItem is not self.rootItem:
+    #                 #delete if node_parent is NULL
+    #                 if node_parent is None:
+    #                     self.removeItem(myPNTaxa.idtaxonref)
+    #                     continue
+    #                 #if parent different, move the node to the new parent
+    #                 elif node_item.parentItem != node_parent:
+    #                     #delete the item from the old parent
+    #                     if node_item in node_item.parentItem.childItems:
+    #                         node_item.parentItem.childItems.remove(node_item)
+    #                     #set the new parent
+    #                     node_item.parentItem = node_parent
+    #                     node_parent.appendChild (node_item)
+    #             #swap the existing itemData with the new one in self.items and node_item
+    #             item = node_item.itemData
+    #             i = self.items.index(item)
+    #             self.items[i] = myPNTaxa
+    #             #finally change the itemData of the node_item
+    #             node_item.itemData = myPNTaxa
+    #         else: #if node_parent: #new item on an existingn parent
+    #             # self.beginInsertRows(
+    #             #     self.createIndex(node_parent.row(), 0, node_parent),
+    #             #     node_parent.childCount(),
+    #             #     node_parent.childCount()
+    #             # )
+    #             print ("add :", myPNTaxa.taxaname)
+    #             self.items.append(myPNTaxa)
+    #             #self.endInsertRows()
+    #             #sort the model
+    #             #self.sortItems(self.sort_column, self.sort_order, node_parent)
+    #     self.setupModelData()
+    #     self.endResetModel()
 
     def clear(self):
+        """Clear the model, reset the items list"""
         #clear the model
         self.beginResetModel()
         self.rootItem = PNTaxa_treeItem(None)
@@ -1503,7 +1500,7 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def refreshData(self, new_PNTaxa_items = None):
-    #refresh the entire model with the new items
+        """Refresh the entire model, replacing items with the new items if provided"""
         #save the items before clear
         if not new_PNTaxa_items:
             new_PNTaxa_items = self.items
@@ -1520,13 +1517,13 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         self.endResetModel()
 
     def setupModelData(self, item = None):
-    #append a list of node to the model, if idparent = None => Root otherwise search for idtaxonref= idparent
+        """Create the model from the list of items (self.items), set the parent and the children"""
         if item:
             items = [item]
         else:
             items = self.items
         
-        # first loop, create a dictionnary for every items
+        # first loop, create a dictionary for every items
         dict_parent = {item.idtaxonref: item.id_parent for item in self.items}
 
         # second loop to detect parents node(id_parent is None)
@@ -1552,20 +1549,23 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         self.refresh_signal.emit()
 
     def taxa_count(self):
-        #count the number of taxa (child items) in the model
+        """Return the total number of taxa (child items) in the model"""
         return sum(item.childCount() for item in self.parent_nodes.values())
 
     def columnCount(self, parent=QtCore.QModelIndex()):
+        """Return the number of columns in the model."""
         return 2
 
     def rowCount(self, parent=QtCore.QModelIndex()):
+        """Return the number of rows in the model."""
         if not parent.isValid():
             parentItem = self.rootItem
         else:
             parentItem = parent.internalPointer()
-        return parentItem.childCount()
+        return parentItem.childCount
 
     def index(self, row, column, parent=QtCore.QModelIndex()):
+        """Return the index of the item at the given row and column."""
         if not self.hasIndex(row, column, parent):
             return QtCore.QModelIndex()
 
@@ -1580,6 +1580,7 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
         return QtCore.QModelIndex()
 
     def parent(self, index):
+        """Return the parent of the item at the given index."""
         if not index.isValid():
             return QtCore.QModelIndex()
 
@@ -1591,7 +1592,49 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
 
         return self.createIndex(parentItem.row(), 0, parentItem)
 
+
+    def _create_multi_score_icon(self, scores, radius=8, spacing=3, shape='ellipse'):
+        """
+            Creates a QIcon with several elements side by side (ellipses or rectangles), automatically sized according to the number of scores.
+            scores : list of scores
+            radius : size of each element
+            spacing : spece between each icons
+            shape : 'ellipse' or 'rect'
+        """
+        n = len(scores)
+        width = n * radius + (n - 1) * spacing
+        height = radius + 2
+        px = QtGui.QPixmap(width, height)
+        px.fill(QtCore.Qt.transparent)
+
+        painter = QtGui.QPainter(px)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        for i, score in enumerate(scores):
+            colour = self._getcolour(score)
+            x = i * (radius + spacing)
+            painter.setBrush(colour)
+            if shape == 'ellipse':
+                painter.drawEllipse(QtCore.QRect(x, 1, radius, radius))
+            elif shape == 'rect':
+                painter.drawRect(QtCore.QRect(x, 1, radius, radius))
+
+        painter.end()
+        return QtGui.QIcon(px)
+    
+    def _getcolour(self, score):
+        """Return the color corresponding to the score (black (None), red (0), green (1), yellow (else))"""
+        if score is None:
+            return QtGui.QColor(0, 0, 0)
+        else:
+            return {0: QtGui.QColor(255, 0, 0), 1: QtGui.QColor(0, 255, 0)}.get(score, QtGui.QColor(255, 255, 0))
+        
+
     def data(self, index, role=Qt.DisplayRole):
+        """
+            Set the data for each item in the model according to the role and the values
+            Add indicators for published/unpublished, taxaname/authors score and returns tooltips
+        """
         if not index.isValid():
             return None
         item = index.internalPointer()
@@ -1599,95 +1642,57 @@ class PNTaxa_TreeModel(QtCore.QAbstractItemModel):
 
         if item.itemData is None:
             return None
-        elif role == Qt.DisplayRole:
-            return item.data(col)
-        elif role == Qt.UserRole:
+        _published = getattr(item.itemData, 'published', False)
+        _accepted = getattr(item.itemData, 'accepted', False)
+        
+        if role == Qt.UserRole:
             return item.itemData
         elif role == Qt.FontRole:
-            if item.itemData and not getattr(item.itemData, 'published', True):
+            if not _published:
                 font = QtGui.QFont()
                 font.setItalic(True)
                 return font
         elif col == 0 :
-            if role == Qt.DecorationRole:
-                _taxonref_score = item.itemData.authors_score
-                _taxaname_score = item.itemData.taxaname_score
-                colour1 = 1
-                colour2 = 1
-                if _taxaname_score is not None:
-                    #colour according to taxaname_score
-                    if _taxaname_score == 0:
-                        colour1 = QtGui.QColor(255, 0, 0)
-                    elif _taxaname_score == 1:
-                        colour1 = QtGui.QColor(0, 255, 0)
-                    else:
-                        colour1 = QtGui.QColor(255, 255, 0)
-                    #colour according to taxonref_score
-                    if _taxonref_score == 0:
-                        colour2 = QtGui.QColor(255, 0, 0)
-                    elif _taxonref_score == 1:
-                        colour2 = QtGui.QColor(0, 255, 0)
-                    elif _taxaname_score is not None:
-                        colour2 = QtGui.QColor(255, 255, 0)
-                #create the mask for both ellipses
-                px = QtGui.QPixmap(20, 10)
-                px.fill(QtCore.Qt.transparent)
-                painter = QtGui.QPainter(px)
-                painter.setRenderHint(QtGui.QPainter.Antialiasing)                        
-                #First ellipse for taxaname_score
-                r1 = QtCore.QRect(1, 1, 8, 8)
-                painter.setBrush(colour1)
-                painter.drawEllipse(r1)
-                #First ellipse for _taxonref_score
-                r1 = QtCore.QRect(12, 1, 8, 8)
-                painter.setBrush(colour2)
-                painter.drawEllipse(r1)
-                painter.end()
-                return QtGui.QIcon(px)
-
+            if role == Qt.DisplayRole:
+                return item.itemData.taxaname
+            elif role == Qt.DecorationRole:
+                return self._create_multi_score_icon([
+                        item.itemData.taxaname_score,
+                        item.itemData.authors_score
+                    ], shape='ellipse')
             elif role == Qt.TextAlignmentRole:
                 if hasattr(item.itemData, 'id_rank') and item.itemData.id_rank >= 21:
                     return Qt.AlignRight | Qt.AlignVCenter
                 else:
                     return Qt.AlignLeft | Qt.AlignVCenter
             elif role == Qt.ToolTipRole:
-                published = getattr(item.itemData, 'published', False)
-                accepted = getattr(item.itemData, 'accepted', False)
+                
                 parts = []
                 # Explanation of the taxaname score
                 parts.append(f"Taxaname: {item.itemData.taxaname_percent}")
                 parts.append(f"Authors: {item.itemData.authors_percent}")
                 # Explanation of the publication status
-                parts.append(f"Published: {published}")
-                parts.append(f"Accepted: {accepted}")
-
-                # parts.append("Published" if published else "Not published")
-                # parts.append("Accepted" if accepted else "Not accepted")
+                parts.append(f"Published: {_published}")
+                parts.append(f"Accepted: {_accepted}")
                 return "\n".join(parts)
-        elif col == 1  and role == Qt.DecorationRole:
-            px = QtGui.QPixmap(26, 12)
-            px.fill(QtCore.Qt.transparent)
-            painter = QtGui.QPainter(px)
-            painter.setRenderHint(QtGui.QPainter.Antialiasing)
-            #create rectangle for published status
-            published = getattr(item.itemData, 'published', False)
-            r2 = QtCore.QRect(1, 1, 10, 10)
-            colour = QtGui.QColor(0, 255, 0) if published else QtGui.QColor(255, 0, 0)
-            painter.setBrush(colour)
-            painter.drawRect(r2)
-            #create rectangle for accepted status
-            accepted = getattr(item.itemData, 'accepted', False)
-            r2 = QtCore.QRect(15, 1, 10, 10)
-            colour = QtGui.QColor(0, 255, 0) if accepted else QtGui.QColor(255, 0, 0)
-            painter.setBrush(colour)
-            painter.drawRect(r2)
-
-            painter.end()
-            return QtGui.QIcon(px)
+        elif col == 1:
+            if role == Qt.DisplayRole:
+                if item.itemData.isautonym:
+                    return "[Autonym]"
+                text = item.itemData.authors or ""
+                if not _published:
+                    text += " (ined.)"
+                return text.strip()
+            elif role == Qt.DecorationRole:
+                return self._create_multi_score_icon([
+                    int(_published),
+                    int(_accepted)
+                ], shape='rect')
         
 
 
     def headerData(self, section, orientation, role=Qt.DisplayRole):
+        """Set the header labels from self.header_labels"""
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.header_labels[section]
         return None
@@ -1701,7 +1706,6 @@ class PNSynonym(object):
         self.category = category
         self.taxon_ref = taxonref
         self.id_taxonref = idtaxonref
-        #self.keyname =''
 
     @property
     def idtaxonref(self):
@@ -1721,8 +1725,8 @@ class PNSynonym(object):
 class PNSynonym_edit (QtWidgets.QWidget):
 # add/update a new synonym to a idtaxonref or search for a idtaxonref (PN_TaxaSearch) according to a synonym 
     button_click = pyqtSignal(object, int)
-    add_signal  = pyqtSignal(str, str)
-    edit_signal  = pyqtSignal(str, str)
+    add_signal  = pyqtSignal(int, str, str)
+    edit_signal  = pyqtSignal(str, str, str)
 
     def __init__(self, myPNSynonym):
         super().__init__()
@@ -1799,9 +1803,9 @@ class PNSynonym_edit (QtWidgets.QWidget):
         new_category = self.Qcombobox.currentText().strip()
         if self.is_new:
             #add mode
-            self.add_signal.emit(new_synonym, new_category)
+            self.add_signal.emit(self.myPNSynonym.idtaxonref, new_synonym, new_category)
         else:
             #edit mode
-            self.edit_signal.emit(new_synonym, new_category)
+            self.edit_signal.emit(self.myPNSynonym.synonym, new_synonym, new_category)
 
 

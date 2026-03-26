@@ -740,9 +740,6 @@ COMMENT ON FUNCTION taxonomy.pn_taxa_getparent(INTEGER, INTEGER) IS 'Return an i
 
 
 
-
-
-
 -----------------------------------------------------------------------------------------------
 ---Add (idtaxonref = 0) or update (idtaxonref >0) a taxa into the reference table
 ------------------------------------------------------------------------------------------------

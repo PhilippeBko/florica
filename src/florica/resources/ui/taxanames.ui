@@ -395,7 +395,7 @@
          </attribute>
          <layout class="QGridLayout" name="gridLayout_7">
           <item row="1" column="0">
-           <layout class="QHBoxLayout" name="trView_hierarchy_Layout">
+           <layout class="QHBoxLayout" name="trview_hierarchy_Layout">
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_3">
               <property name="sizeConstraint">

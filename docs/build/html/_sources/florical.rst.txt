@@ -1,0 +1,5 @@
+Florica
+=======
+
+.. automodule:: florica
+   :members:
