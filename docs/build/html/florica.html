@@ -631,28 +631,27 @@ Methods and properties dedicated to taxon management queries.</p>
 <dd><dl class="py property">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym.idtaxonref">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">idtaxonref</span></span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym.idtaxonref" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns an integer value of id_taxonref, 0 if errors</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym.resolved">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">resolved</span></span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym.resolved" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Returns True if idtaxonref&gt;0</p>
+</dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PNSynonym_edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit" title="Link to this definition">¶</a></dt>
-<dd><dl class="py attribute">
+<dd><p>Class providing a user interface for editing/adding a synonym (PNSynonym)
+If not resolved (idtaxonref = 0), user can search for a idtaxonref (PN_TaxaSearch)
+Emit signal (edit or add) when the user clicks the Apply button</p>
+<dl class="py attribute">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.add_signal">
 <span class="sig-name descname"><span class="pre">add_signal</span></span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.add_signal" title="Link to this definition">¶</a></dt>
 <dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.button_click">
-<span class="sig-name descname"><span class="pre">button_click</span></span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.button_click" title="Link to this definition">¶</a></dt>
-<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -662,29 +661,16 @@ Methods and properties dedicated to taxon management queries.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.accept">
-<span class="sig-name descname"><span class="pre">accept</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.accept" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.close" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.setting_ui">
-<span class="sig-name descname"><span class="pre">setting_ui</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.setting_ui" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.refresh">
+<span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.refresh" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh UI with PNSynonym.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.show">
 <span class="sig-name descname"><span class="pre">show</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.show" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNSynonym_edit.valid_newname">
-<span class="sig-name descname"><span class="pre">valid_newname</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNSynonym_edit.valid_newname" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Show the edit window.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -803,42 +789,12 @@ The class takes a PNTaxa object as input to define the taxonomic hierarchy.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PNTaxa_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add" title="Link to this definition">¶</a></dt>
-<dd><p>A class that represents an add window for taxonomic data.
-This class inherits from <cite>QtWidgets.QMainWindow</cite> and provides a user interface for adding new taxonomic records.</p>
-<dl class="simple">
-<dt>Attributes:</dt><dd><p>myPNTaxa (PNTaxa): An instance of the <cite>PNTaxa</cite> class that provides access to the taxonomic data.
-table_taxa (QTableView): A <cite>QTableView</cite> widget that displays the taxonomic data in a tabular format.
-updated (bool): A flag indicating whether the taxon has been updated.</p>
-</dd>
-<dt>Methods:</dt><dd><dl class="simple">
-<dt>__init__(self, myPNTaxa: PNTaxa):</dt><dd><p>Initializes the <cite>PNTaxa_add</cite> instance with the given <cite>myPNTaxa</cite>.</p>
-</dd>
-<dt>show(self):</dt><dd><p>Shows the add window.</p>
-</dd>
-<dt>close(self):</dt><dd><p>Closes the add window.</p>
-</dd>
-<dt>apply(self):</dt><dd><p>Valid the form and emit signal apply_signal with a taxa-dictionary (dict_tosave).</p>
-</dd>
-<dt>apply_signal(self):</dt><dd><p>Emitted when the apply button is clicked.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<dl class="py class">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CheckableOnlyProxy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy" title="Link to this definition">¶</a></dt>
-<dd><dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy.filterAcceptsRow">
-<span class="sig-name descname"><span class="pre">filterAcceptsRow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy.filterAcceptsRow" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy.setOnlyCheckable">
-<span class="sig-name descname"><span class="pre">setOnlyCheckable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">enabled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.CheckableOnlyProxy.setOnlyCheckable" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
+<dd><p>Class representing a window for adding taxonomic data to a PNTaxa object, using user-entered data, a WFO list, or API data.
+Returns a dictionary of taxa (dict_tosave) when the user clicks the Apply button.
+Attributes:
+myPNTaxa (PNTaxa): An instance of the <cite>PNTaxa</cite> class that provides access to the taxonomic data.        
+Signals:
+apply_signal: A signal that is emitted when the user clicks the Apply button.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.apply_signal">
 <span class="sig-name descname"><span class="pre">apply_signal</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.apply_signal" title="Link to this definition">¶</a></dt>
@@ -846,61 +802,8 @@ updated (bool): A flag indicating whether the taxon has been updated.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.apply">
-<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.apply" title="Link to this definition">¶</a></dt>
-<dd><p>Valid the form, save the taxa-dictionary (dict_tosave) et emit signal apply_signal.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.checked_children">
-<span class="sig-name descname"><span class="pre">checked_children</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.checked_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.checked_parent">
-<span class="sig-name descname"><span class="pre">checked_parent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.checked_parent" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.click_view_onlyNew">
-<span class="sig-name descname"><span class="pre">click_view_onlyNew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.click_view_onlyNew" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.close" title="Link to this definition">¶</a></dt>
-<dd><p>Close the add window.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.draw_list">
-<span class="sig-name descname"><span class="pre">draw_list</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.draw_list" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.get_listcheck">
-<span class="sig-name descname"><span class="pre">get_listcheck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.get_listcheck" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.on_tabWidget_click">
-<span class="sig-name descname"><span class="pre">on_tabWidget_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.on_tabWidget_click" title="Link to this definition">¶</a></dt>
-<dd><p>Click on a tabWidget_main item</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.rankComboBox_setdata">
-<span class="sig-name descname"><span class="pre">rankComboBox_setdata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.rankComboBox_setdata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.refresh">
 <span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.refresh" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.refresh_category">
-<span class="sig-name descname"><span class="pre">refresh_category</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.refresh_category" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -909,46 +812,17 @@ updated (bool): A flag indicating whether the taxon has been updated.</p>
 <dd><p>Show the add window.</p>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.taxaLineEdit_setdata">
-<span class="sig-name descname"><span class="pre">taxaLineEdit_setdata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.taxaLineEdit_setdata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.trview_childs_checked_click">
-<span class="sig-name descname"><span class="pre">trview_childs_checked_click</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checked_item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.trview_childs_checked_click" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.unchecked_child">
-<span class="sig-name descname"><span class="pre">unchecked_child</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.unchecked_child" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PNTaxa_edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit" title="Link to this definition">¶</a></dt>
-<dd><p>A class that represents an editing window for taxonomic data.
-This class inherits from <cite>QtWidgets.QMainWindow</cite> and provides a user interface for editing taxonomic data. It allows users to update existing taxonomic records.</p>
-<dl class="simple">
-<dt>Attributes:</dt><dd><p>myPNTaxa (PNTaxa): An instance of the <cite>PNTaxa</cite> class that provides access to the taxonomic data.
-table_taxa (QTableView): A <cite>QTableView</cite> widget that displays the taxonomic data in a tabular format.
-taxa_id (int): The ID of the taxon being edited.
-updated (bool): A flag indicating whether the taxon has been updated.</p>
-</dd>
-<dt>Methods:</dt><dd><dl class="simple">
-<dt>__init__(self, myPNTaxa: PNTaxa, taxa_id: int):</dt><dd><p>Initializes the <cite>PNTaxa_edit</cite> instance with the given <cite>myPNTaxa</cite> and <cite>taxa_id</cite>.</p>
-</dd>
-<dt>show(self):</dt><dd><p>Shows the editing window.</p>
-</dd>
-<dt>close(self):</dt><dd><p>Closes the editing window.</p>
-</dd>
-<dt>apply(self):</dt><dd><p>Applies the changes made to the taxon and updates the <cite>myPNTaxa</cite> instance.</p>
-</dd>
-</dl>
-</dd>
-</dl>
+<dd><p>Class providing a user interface for editing taxonomic data (PNTaxa).
+Returns a dictionary of taxa (dict_tosave) when the user clicks the Apply button.
+Attributes:
+MyPNTaxa (PNTaxa): An instance of the <cite>PNTaxa</cite> class that provides access to the taxonomic data.
+Signals:
+apply_signal: A signal that is emitted when the user clicks the Apply button.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.apply_signal">
 <span class="sig-name descname"><span class="pre">apply_signal</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.apply_signal" title="Link to this definition">¶</a></dt>
@@ -956,34 +830,16 @@ updated (bool): A flag indicating whether the taxon has been updated.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.apply">
-<span class="sig-name descname"><span class="pre">apply</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.apply" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.close">
-<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.close" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.comboBox_parent_setdata">
-<span class="sig-name descname"><span class="pre">comboBox_parent_setdata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.comboBox_parent_setdata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.refresh">
 <span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.refresh" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Refresh UI with PNTaxa</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.show">
 <span class="sig-name descname"><span class="pre">show</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.show" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_edit.taxaLineEdit_setdata">
-<span class="sig-name descname"><span class="pre">taxaLineEdit_setdata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_edit.taxaLineEdit_setdata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Show the edit window.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1073,50 +929,42 @@ list_api (list): List of API names to query.</p>
 </dl>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_searchAPI.total_api_calls">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">total_api_calls</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_searchAPI.total_api_calls" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PNTaxa_treeItem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem" title="Link to this definition">¶</a></dt>
-<dd><dl class="py method">
+<dd><p>This class represents a tree item in the PNTaxa_treeModel abstract data model.
+It is used to store information about a taxon and its parent-child relationship.</p>
+<dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.appendChild">
 <span class="sig-name descname"><span class="pre">appendChild</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.appendChild" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Add a child to the Item</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.child">
 <span class="sig-name descname"><span class="pre">child</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.child" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.childCount">
-<span class="sig-name descname"><span class="pre">childCount</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.childCount" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.columnCount">
-<span class="sig-name descname"><span class="pre">columnCount</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.columnCount" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.data">
-<span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">column</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.data" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the child at the specified row.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.parent">
-<span class="sig-name descname"><span class="pre">parent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.parent" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">parent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#florica.models.taxa_model.PNTaxa_treeItem" title="florica.models.taxa_model.PNTaxa_treeItem"><span class="pre">PNTaxa_treeItem</span></a></span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.parent" title="Link to this definition">¶</a></dt>
+<dd><p>Return the parent of the item</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.row">
-<span class="sig-name descname"><span class="pre">row</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.row" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<span class="sig-name descname"><span class="pre">row</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.row" title="Link to this definition">¶</a></dt>
+<dd><p>Return the row number of the item</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeItem.childCount">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">childCount</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeItem.childCount" title="Link to this definition">¶</a></dt>
+<dd><p>Return the number of child tree items.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1140,20 +988,13 @@ It inherits from <cite>QtCore.QAbstractItemModel</cite> and is designed to displ
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.data">
 <span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PyQt5.QtCore.Qt.DisplayRole</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.data" title="Link to this definition">¶</a></dt>
-<dd><p>Set the data for each item in the model according to the role and the values
-Add green/red indicators for published/unpublished, taxaname/authors score and returns tooltips</p>
+<dd><p>Set the data for each item in the model according to the role</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.getItem">
-<span class="sig-name descname"><span class="pre">getItem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idtaxonref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.getItem" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">getItem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idtaxonref</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#florica.models.taxa_model.PNTaxa" title="florica.models.taxa_model.PNTaxa"><span class="pre">PNTaxa</span></a></span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.getItem" title="Link to this definition">¶</a></dt>
 <dd><p>Return the item (PNTaxa) corresponding to the idtaxonref</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.getNode">
-<span class="sig-name descname"><span class="pre">getNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">idtaxonref</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.getNode" title="Link to this definition">¶</a></dt>
-<dd><p>Return the node (TreeItem) corresponding to the idtaxonref</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1196,18 +1037,6 @@ Add green/red indicators for published/unpublished, taxaname/authors score and r
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.rowCount">
 <span class="sig-name descname"><span class="pre">rowCount</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">PyQt5.QtCore.QModelIndex</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.rowCount" title="Link to this definition">¶</a></dt>
 <dd><p>Return the number of rows in the model.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.setupModelData">
-<span class="sig-name descname"><span class="pre">setupModelData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.setupModelData" title="Link to this definition">¶</a></dt>
-<dd><p>Create the model from the list of items (self.items), set the parent and the children</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_treeModel.taxa_count">
-<span class="sig-name descname"><span class="pre">taxa_count</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_treeModel.taxa_count" title="Link to this definition">¶</a></dt>
-<dd><p>Return the total number of taxa (child items) in the model</p>
 </dd></dl>
 
 <dl class="py attribute">

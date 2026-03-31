@@ -2,20 +2,56 @@ import json
 import re
 import uuid
 
-from PyQt5 import  QtSql
-from PyQt5.QtCore import QFile, QTextStream
+from PyQt5 import  QtSql, QtWidgets
+from PyQt5.QtCore import QFile, QTextStream, Qt, QEvent, pyqtSignal
 
 from florica.core import functions
 
 
-class DatabaseConnection:
+class DatabaseConnection (QtWidgets.QWidget):
     """
         A class for managing connections to a PostgreSQL database.
         It configures the standard methods for opening, closing, and executing connections using a `pg_connexion` dictionary containing parameters (host, username, password, database, port).
         It checks for the existence of the schema and executes the scripts necessary to create the database if required.
     """
+    clicked = pyqtSignal()
     def __init__(self):
         self.db = None
+        super().__init__()
+        frame = QtWidgets.QFrame(self)
+        frame.setStyleSheet("background-color: transparent;")
+        self.setCursor(Qt.PointingHandCursor)
+
+        self.statusIndicator = QtWidgets.QWidget(frame)
+        #self.statusIndicator.setStyleSheet("background-color: rgb(255, 0, 0); border-radius: 5px;")
+        self.statusIndicator.setFixedSize(10, 10)
+
+        self.statusConnection = QtWidgets.QLabel(None, frame)
+        self.statusConnection.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+        #self.statusConnection.setText("Not Connected")
+        
+        frame_layout = QtWidgets.QHBoxLayout(frame)
+        frame_layout.setContentsMargins(5, 5, 5, 5)
+        frame_layout.addWidget(self.statusIndicator)
+        frame_layout.addWidget(self.statusConnection)
+        
+        self.setLayout(frame_layout)   
+        
+    def enterEvent(self, event):
+        """Set the text in blue when mouse is over the widget."""
+        self.statusConnection.setStyleSheet("color: blue;")
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """Set the text normal style when mouse leaves the widget."""
+        self.statusConnection.setStyleSheet("")
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        """Emit the clicked signal when the left mouse button is pressed."""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
 
     def open(self, pg_connexion):
         """DBASE: Open a connection to a PostgreSQL database using a pg_connexion dictionary"""
@@ -24,6 +60,8 @@ class DatabaseConnection:
             if self.db.isValid():
                 self.db.close()
                 del self.db
+            self.db = None
+        self._load_status()
         port = int(pg_connexion.get("port", 5432))
         conn_name = "x-nomen" +str(uuid.uuid4())
         self.db = QtSql.QSqlDatabase.addDatabase("QPSQL", conn_name)
@@ -32,12 +70,23 @@ class DatabaseConnection:
         self.db.setUserName(pg_connexion["user"])
         self.db.setPassword(pg_connexion["password"])
         self.db.setDatabaseName(pg_connexion["database"])
-        if self.db.open():
-            return self.check_schema_and_tables()
-        else:
+        #set db to none if not open and schema and tables are not loaded
+        if not self.db.open() or not self.check_schema_and_tables():
             self.db = None
-            return False
-        
+        #set the indicator color according to status
+        self._load_status()
+        #return true/false
+        return self.db is not None 
+
+    def _load_status (self):
+        """Set the color and text of the indicator according to the connection status."""
+        if self.db:
+            self.statusIndicator.setStyleSheet("background-color: rgb(0, 255, 0); border-radius: 5px;")
+            self.statusConnection.setText("Connected : "+ self.db.databaseName())
+        else:
+            self.statusIndicator.setStyleSheet("background-color: rgb(255, 0, 0); border-radius: 5px;")
+            self.statusConnection.setText("Not Connected")
+
     def close(self):
         """DBASE: Close the current database connection"""
         if self.db:
@@ -101,6 +150,8 @@ class DatabaseConnection:
                 sql = stream.readAll()
                 self.exec(sql)
             return True
+
+
 
 
     

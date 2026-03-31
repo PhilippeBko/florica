@@ -6,7 +6,7 @@ import configparser
 # Third-party
 from PyQt5 import QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QFile
-from PyQt5.QtSql import QSqlDatabase,QSqlQuery
+from PyQt5.QtSql import QSqlDatabase
 
 
 
@@ -212,61 +212,20 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
 
 
 
-class PN_DatabaseStatusWidget(QtWidgets.QWidget):
-    """
-        A widget to display the status of a database connection.
-    """
-    clicked = pyqtSignal()
-    def __init__(self, dbname = None):
-        super().__init__()
-        frame = QtWidgets.QFrame(self)
-        frame.setStyleSheet("background-color: transparent;")
-        self.setCursor(Qt.PointingHandCursor)
 
-        self.statusIndicator = QtWidgets.QWidget(frame)
-        self.statusConnection = QtWidgets.QLabel(None, frame)
-        self.statusIndicator.setFixedSize(10, 10)
-        self.statusConnection.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
-        frame_layout = QtWidgets.QHBoxLayout(frame)
-        frame_layout.setContentsMargins(5, 5, 5, 5)
-        frame_layout.addWidget(self.statusIndicator)
-        frame_layout.addWidget(self.statusConnection)
-
-        self.load_status(dbname)
-        self.setLayout(frame_layout)        
-        self._installClickFilter(self)
-
-    def _installClickFilter(self, widget):
-        widget.installEventFilter(self)
-        for child in widget.findChildren(QtWidgets.QWidget):
-            child.installEventFilter(self)
-
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.Enter:
-            self.statusConnection.setStyleSheet("color: blue;")
-        elif event.type() == QEvent.Leave:
-            self.statusConnection.setStyleSheet(None)
-        elif event.type() == QEvent.MouseButtonPress:
-            self.clicked.emit()
-            return True
-        return super().eventFilter(obj, event)
-
-    def load_status (self, dbname = None):
-        if dbname:
-            self.statusIndicator.setStyleSheet("background-color: rgb(0, 255, 0); border-radius: 5px;")
-            self.statusConnection.setText("Connected : "+ dbname)
-        else:
-            self.statusIndicator.setStyleSheet("background-color: rgb(255, 0, 0); border-radius: 5px;")
-            self.statusConnection.setText("Not Connected")
-    
 class MessageBox(QtWidgets.QMessageBox):
+    """
+    A custom message box widget with custom icons and messages
+    """
     def __init__(self, parent = None):
         super().__init__(parent)
 
-    def custom_msgbox(self, title, text,
+    def _custom_msgbox(self, title, text,
                       icon=QtWidgets.QMessageBox.Icon.Information,
                       buttons=QtWidgets.QMessageBox.StandardButton.Ok):
-        
+        """
+            A generic message box function
+        """
         msg = QtWidgets.QMessageBox(self.parent())
         msg.setWindowTitle(title)
         msg.setText(text)
@@ -276,7 +235,6 @@ class MessageBox(QtWidgets.QMessageBox):
         Qt.WindowType.CustomizeWindowHint |
         Qt.WindowType.WindowCloseButtonHint
         )
-
 
         # central icon
         main_icons = {
@@ -310,10 +268,11 @@ class MessageBox(QtWidgets.QMessageBox):
         return msg.exec()
 
     def information_msgbox (self, title, msg, critical = False):
+        """A simple information message box, with a critical icon if critical is set to True"""
         _icon = QtWidgets.QMessageBox.Icon.Information
         if critical:
             _icon=QtWidgets.QMessageBox.Icon.Critical
-        self.custom_msgbox(
+        self._custom_msgbox(
                 title,
                 msg,                
                 icon=_icon,
@@ -321,10 +280,11 @@ class MessageBox(QtWidgets.QMessageBox):
             )
         
     def question_msgbox (self, title, msg, warning = False):
+        """A simple question message box, with a warning icon if warning is set to True"""
         _icon=QtWidgets.QMessageBox.Icon.Question
         if warning:
             _icon=QtWidgets.QMessageBox.Icon.Warning
-        return  self.custom_msgbox(
+        return  self._custom_msgbox(
                     title,
                     msg,
                     icon = _icon,
@@ -385,9 +345,6 @@ class ConfigManager:
             self.config["settings"] = {}
         self.config["settings"]["theme"] = theme_name
         self.save()
-
-
-
 
 
 
@@ -507,7 +464,7 @@ class PostgresConfigDialog(QtWidgets.QDialog):
                 if reply :
                     #create the database
                     sql_query = f"CREATE DATABASE {database};"
-                    if not db.exec(sql_query):
+                    if not db.exec(sql_query).isValid():
                         MessageBox().information_msgbox("Creation failed", db.lastError().text(), True)
                         connexion_ok = False
                 else:
@@ -554,4 +511,58 @@ class PostgresConfigDialog(QtWidgets.QDialog):
 
 
 
+
+
+# class PN_DatabaseStatusWidget(QtWidgets.QWidget):
+#     """
+#         A widget composed of a label  and an indicator to display the status of a database connection.
+#         Emit a signal when clicked
+#     """
+#     clicked = pyqtSignal()
+#     def __init__(self):
+#         super().__init__()
+#         frame = QtWidgets.QFrame(self)
+#         frame.setStyleSheet("background-color: transparent;")
+#         self.setCursor(Qt.PointingHandCursor)
+
+#         self.statusIndicator = QtWidgets.QWidget(frame)
+#         self.statusIndicator.setStyleSheet("background-color: rgb(255, 0, 0); border-radius: 5px;")
+#         self.statusIndicator.setFixedSize(10, 10)
+
+#         self.statusConnection = QtWidgets.QLabel(None, frame)
+#         self.statusConnection.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Preferred)
+#         self.statusConnection.setText("Not Connected")
+        
+#         frame_layout = QtWidgets.QHBoxLayout(frame)
+#         frame_layout.setContentsMargins(5, 5, 5, 5)
+#         frame_layout.addWidget(self.statusIndicator)
+#         frame_layout.addWidget(self.statusConnection)
+        
+#         #self.load_status(dbname)
+#         self.setLayout(frame_layout)        
+#         self._installClickFilter(self)
+
+#     def _installClickFilter(self, widget):
+#         widget.installEventFilter(self)
+#         for child in widget.findChildren(QtWidgets.QWidget):
+#             child.installEventFilter(self)
+
+#     def eventFilter(self, obj, event):
+#         if event.type() == QEvent.Enter:
+#             self.statusConnection.setStyleSheet("color: blue;")
+#         elif event.type() == QEvent.Leave:
+#             self.statusConnection.setStyleSheet(None)
+#         elif event.type() == QEvent.MouseButtonPress:
+#             self.clicked.emit()
+#             return True
+#         return super().eventFilter(obj, event)
+
+
+#     def load_status (self, dbname = None):
+#         if dbname:
+#             self.statusIndicator.setStyleSheet("background-color: rgb(0, 255, 0); border-radius: 5px;")
+#             self.statusConnection.setText("Connected : "+ dbname)
+#         else:
+#             self.statusIndicator.setStyleSheet("background-color: rgb(255, 0, 0); border-radius: 5px;")
+#             self.statusConnection.setText("Not Connected")
 

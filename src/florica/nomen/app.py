@@ -26,7 +26,7 @@ from florica.models.taxa_model import (
     PNTaxa_QTreeView, PNTaxa_add, PNTaxa_edit, PNTaxa_merge,
     PNSynonym, PNSynonym_edit
 )
-from florica.core.widgets import PN_JsonQTreeView, LinkDelegate, PostgresConfigDialog, load_ui_from_resources, PN_DatabaseStatusWidget, MessageBox, ConfigManager
+from florica.core.widgets import PN_JsonQTreeView, LinkDelegate, PostgresConfigDialog, load_ui_from_resources, MessageBox, ConfigManager   #, PN_DatabaseStatusWidget
 from florica.core.database import DatabaseConnection, PN_dbTaxa
 
 #generic function to access to the dbases classes
@@ -463,8 +463,8 @@ class MainWindowController:
         self.trview_taxonref = view.trview_taxonref
         
         #load widgets to the view
-        self.dbwidget_status = PN_DatabaseStatusWidget()
-        self.window.statusBar().addPermanentWidget(self.dbwidget_status)
+        self.dbwidget = DatabaseConnection() #PN_DatabaseStatusWidget()
+        self.window.statusBar().addPermanentWidget(self.dbwidget)
 
         self.trview_properties =  PN_JsonQTreeView ()
         layout = self.window.toolBox.widget(2).layout()
@@ -534,7 +534,7 @@ class MainWindowController:
         
         self.metadata_worker.Result_Signal.connect(self.trview_metadata_setDataAPI)
         #self.combo_taxa.currentIndexChanged.connect(self.trview_taxonref_setData)
-        self.dbwidget_status.clicked.connect(self.on_status_clicked)
+        self.dbwidget.clicked.connect(self.on_status_clicked)
 
         self.view.buttonbox_filter_apply.clicked.connect(self.trview_taxonref_setData)
         self.view.buttonbox_filter_reset.clicked.connect(self.on_button_filter_reset_clicked)
@@ -698,7 +698,6 @@ class MainWindowController:
     def on_status_clicked(self):
         """GUI: Load the database dialogBox to edit database parameters"""
         dlg = PostgresConfigDialog(self.config_manager, self.window)
-        #dlg = PostgresConfigDialog("config.ini", self.window)
         result = dlg.exec_()
         if not result:
             return
@@ -714,29 +713,26 @@ class MainWindowController:
         self.combo_taxa.addItem('All names')
         self.combo_taxa.setItemData(0, PNTaxa(0, 'All names', '', 0), role=QtCore.Qt.UserRole) 
     #load the connection, load dialog box if not connected
-        dbconn = DatabaseConnection()
         while True:
             pg = self.config_manager.postgresql
             if pg:
-                self.connected = dbconn.open(pg)                
+                self.connected = self.dbwidget.open(pg)                
                 if self.connected:
                     break
-            #dlg = PostgresConfigDialog(config_file, self.window)
             dlg = PostgresConfigDialog(self.config_manager, self.window)
             result = dlg.exec_()
             if not result:
                 break
-        #set the widget with status (connected or Not)
-        self.dbwidget_status.load_status(dbconn.dbname())
+
 
     #return if not connected (or loop ??)
         if not self.connected:
             return
     #load the specific taxa database functions
-        taxa = PN_dbTaxa(dbconn)
+        taxa = PN_dbTaxa(self.dbwidget)
     #initialize the registry database services
         functions._registry = None
-        functions.init_registry(functions.ServiceRegistry(dbconn, taxa=taxa))
+        functions.init_registry(functions.ServiceRegistry(self.dbwidget, taxa=taxa))
     #set the APG options into self.combo_taxa
         lst = db_taxa().db_get_clades()
         for clade in lst:
@@ -1324,7 +1320,7 @@ class MainWindowController:
             category = self.trview_names.currentIndex().parent().data()
         else:
             category = self.trview_names.currentIndex().data()
-        new_synonym = PNSynonym(None, self.selectedItem.taxonref, self.selectedItem.idtaxonref,category)
+        new_synonym = PNSynonym(None, self.selectedItem.taxonref, self.selectedItem.idtaxonref, category)
         class_newname = PNSynonym_edit(new_synonym)
         class_newname.add_signal.connect(self.apply_add_synonym)
         class_newname.show()
@@ -1374,7 +1370,10 @@ class MainWindowController:
     def apply_add_synonym(self, id_taxonref, new_synonym, new_category):
         """GUI: Add the new synonym and refresh the list of names"""
         if db_taxa().db_add_synonym(id_taxonref, new_synonym, new_category):
-            self.window.sender().Qline_name.setText('')
+            #self.window.sender().Qline_name.setText('')
+            #self.window.sender().myPNSynonym.category = new_category
+            self.window.sender().myPNSynonym.synonym = ''
+            self.window.sender().refresh()
             self.trview_names_setData()
         else:
             msg = db_postgres().postgres_error()
@@ -1383,7 +1382,9 @@ class MainWindowController:
     def apply_edit_synonym(self, synonym, new_synonym, new_category):
         """GUI: Update the modified version of the synonym and refresh the list of names"""
         if db_taxa().db_edit_synonym(synonym, new_synonym, new_category):
-            self.window.sender().close()
+            self.window.sender().myPNSynonym.synonym = new_synonym
+            self.window.sender().myPNSynonym.category = new_category
+            self.window.sender().refresh()
             self.trview_names_setData()
         else:
             msg = db_postgres().postgres_error()

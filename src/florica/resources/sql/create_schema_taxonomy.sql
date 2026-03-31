@@ -1089,13 +1089,15 @@ VALUES
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT taxa_reference_un UNIQUE (basename, id_parent);
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT id_parent_fk FOREIGN KEY (id_parent) REFERENCES taxonomy.taxa_reference(id_taxonref) ON UPDATE CASCADE ON DELETE CASCADE;
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT id_rank_fk FOREIGN KEY (id_rank) REFERENCES taxonomy.taxa_rank(id_rank);
-	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT check_name_length CHECK (id_rank <14 OR length(basename) >= 3);
+	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT check_name_length CHECK (id_rank <14 OR length(btrim(basename)) >= 3);
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT check_name_null_parent CHECK (id_rank =1 OR id_parent IS NOT NULL);
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT check_name_self_parent CHECK (id_parent IS NULL OR id_parent <> id_taxonref);
 	--on taxa_nameset
 	ALTER TABLE taxonomy.taxa_nameset ALTER COLUMN name SET NOT NULL;
 	ALTER TABLE taxonomy.taxa_nameset ALTER COLUMN category SET DEFAULT 5;
 	ALTER TABLE taxonomy.taxa_nameset ADD CONSTRAINT check_category CHECK (category BETWEEN 0 AND 15);
+	ALTER TABLE taxonomy.taxa_nameset ADD CONSTRAINT check_name_length CHECK (length(btrim(name)) >= 3);
+	
 	ALTER TABLE taxonomy.taxa_nameset ADD CONSTRAINT taxa_name_fk FOREIGN KEY (id_taxonref) REFERENCES taxonomy.taxa_reference(id_taxonref) ON UPDATE CASCADE ON DELETE CASCADE;
 --add sequence
 	CREATE SEQUENCE taxonomy.taxa_id_taxonref_seq OWNED BY taxonomy.taxa_reference.id_taxonref;
