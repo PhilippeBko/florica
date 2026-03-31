@@ -407,7 +407,7 @@ creates the metadata worker (Qthread) and sets the slots signals.</p>
 
 <dl class="py class" id="module-florica.core.database">
 <dt class="sig sig-object py" id="florica.core.database.DatabaseConnection">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.core.database.</span></span><span class="sig-name descname"><span class="pre">DatabaseConnection</span></span><a class="headerlink" href="#florica.core.database.DatabaseConnection" title="Link to this definition">¶</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.core.database.</span></span><span class="sig-name descname"><span class="pre">DatabaseConnection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection" title="Link to this definition">¶</a></dt>
 <dd><p>A class for managing connections to a PostgreSQL database.
 It configures the standard methods for opening, closing, and executing connections using a <cite>pg_connexion</cite> dictionary containing parameters (host, username, password, database, port).
 It checks for the existence of the schema and executes the scripts necessary to create the database if required.</p>
@@ -430,6 +430,12 @@ It checks for the existence of the schema and executes the scripts necessary to 
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="florica.core.database.DatabaseConnection.enterEvent">
+<span class="sig-name descname"><span class="pre">enterEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection.enterEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Set the text in blue when mouse is over the widget.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="florica.core.database.DatabaseConnection.exec">
 <span class="sig-name descname"><span class="pre">exec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sql</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection.exec" title="Link to this definition">¶</a></dt>
 <dd><p>DBASE: Execute the provided SQL query and returns the result</p>
@@ -439,6 +445,18 @@ It checks for the existence of the schema and executes the scripts necessary to 
 <dt class="sig sig-object py" id="florica.core.database.DatabaseConnection.last_error">
 <span class="sig-name descname"><span class="pre">last_error</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection.last_error" title="Link to this definition">¶</a></dt>
 <dd><p>DBASE: Returns the last error that occurred in the database connection</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.core.database.DatabaseConnection.leaveEvent">
+<span class="sig-name descname"><span class="pre">leaveEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection.leaveEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Set the text normal style when mouse leaves the widget.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.core.database.DatabaseConnection.mousePressEvent">
+<span class="sig-name descname"><span class="pre">mousePressEvent</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.database.DatabaseConnection.mousePressEvent" title="Link to this definition">¶</a></dt>
+<dd><p>Emit the clicked signal when the left mouse button is pressed.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -774,7 +792,7 @@ It is designed to display a hierarchical taxonomic structure.
 The class takes a PNTaxa object as input to define the taxonomic hierarchy.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_QTreeView.selecteditem">
-<span class="sig-name descname"><span class="pre">selecteditem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_QTreeView.selecteditem" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">selecteditem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#florica.models.taxa_model.PNTaxa" title="florica.models.taxa_model.PNTaxa"><span class="pre">PNTaxa</span></a></span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_QTreeView.selecteditem" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the selected PNTaxa from the hierarchical model</p>
 </dd></dl>
 
@@ -804,7 +822,8 @@ apply_signal: A signal that is emitted when the user clicks the Apply button.</p
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.refresh">
 <span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_add.refresh" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Refresh the content of the add window.</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_add.show">
@@ -1068,7 +1087,7 @@ It inherits from <cite>QtCore.QAbstractItemModel</cite> and is designed to displ
 <dt class="sig sig-object py" id="florica.models.taxa_model.PN_TaxaSearch">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PN_TaxaSearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PN_TaxaSearch" title="Link to this definition">¶</a></dt>
 <dd><p>The PN_TaxaSearch class is a custom class that inherits from QtWidgets.QWidget.
-It is designed to display a search widget composed of a search text and a treeview result with matched taxa and score.</p>
+It is designed to display a search widget composed of a search text and a Qtreeview result with matched taxa and score.</p>
 <dl class="simple">
 <dt>Attributes:</dt><dd><p>lineEdit_search_taxa (QtWidgets.QLineEdit): The search text input field.
 treeview_scoretaxa (QtWidgets.QTreeView): The treeview widget that displays the search results.</p>
