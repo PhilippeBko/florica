@@ -6,6 +6,7 @@
 
 import os
 #os.environ["QT_LOGGING_RULES"] = "qt.qpa.*=false"
+from pathlib import Path
 
 import sys
 
@@ -26,18 +27,19 @@ from florica.models.taxa_model import (
     PNTaxa_QTreeView, PNTaxa_add, PNTaxa_edit, PNTaxa_merge,
     PNSynonym, PNSynonym_edit
 )
-from florica.core.widgets import PN_JsonQTreeView, LinkDelegate, PostgresConfigDialog, load_ui_from_resources, MessageBox, ConfigManager   #, PN_DatabaseStatusWidget
-from florica.core.database import DatabaseConnection, PN_dbTaxa
+from florica.core.widgets import PN_JsonQTreeView, HyperLinkDelegate, PostgresConfigDialog, load_ui_from_resources, MessageBox, ConfigManager   #, PN_DatabaseStatusWidget
+#from florica.core.database import DatabaseConnection, PN_dbTaxa
+from florica.core import database
 
 #generic function to access to the dbases classes
 #access to the postgresql connexion
 def db_postgres():
     """DBASE: returns the instance of the open db connexion (DatabaseConnection)"""
-    return functions.db()
+    return database.db()
 #access to a postgres connexion with specific procedures for taxa management
 def db_taxa():
     """DBASE: returns the instance of the open dbtaxa connexion (PN_dbTaxa)"""
-    return functions.dbtaxa()
+    return database.dbtaxa()
 
 #Class _EditProperties_Delegate is used by the MainWindow class to edit the properties of the PN_JsonQTreeView
 class _EditProperties_Delegate(QtWidgets.QStyledItemDelegate):
@@ -117,8 +119,8 @@ class _EditProperties_Delegate(QtWidgets.QStyledItemDelegate):
             model.setData(index, _value)
 
 #class _MetadataDelegateWithAuthorCheck is used to highlight the authors name in red if it does not match the current authors name
-#surcharging the LinkDelegate used to highlight the hyperlinks in the metadata treeview
-class _MetadataDelegateWithAuthorCheck(LinkDelegate):
+#surcharging the HyperLinkDelegate used to highlight the hyperlinks in the metadata treeview
+class _MetadataDelegateWithAuthorCheck(HyperLinkDelegate):
     menu_action_triggered = QtCore.pyqtSignal(str, str)
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -440,12 +442,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 class MainWindowController:
     """
-        The controller class of the MainWindow class
-        Initializes the MainWindowController object given a view object.
-        It sets the view, window, connected status, db properties, authors delegate,
+        The MainWindowController class is a controller for the main window of the application.
+        Sets the view, window, connected status, db properties, authors delegate,
         config manager, and loads widgets from and to the view.
         It sets the filtering and sorting on the proxy model for trview_taxonref,
-        creates the metadata worker (Qthread) and sets the slots signals.
+        Creates the metadata worker (Qthread) and sets the slots signals.
     """    
 #the main controller of the application
     def __init__(self, view):
@@ -453,17 +454,22 @@ class MainWindowController:
         self.window = self.view.window
         self.connected = False
         self.db_properties = None
-        #self.view.set_filter_visible(False)
+        
         self.view.button_filter_visible = False
         self.authors_delegate = _MetadataDelegateWithAuthorCheck()
-        config_file = functions.resource_path("config.ini")
+
+        #load the config file
+        BASE_DIR = Path(__file__).resolve().parents[1]
+        config_file = os.path.join(BASE_DIR, "config.ini")
+
+        #config_file = functions.resource_path("config.ini")
         self.config_manager = ConfigManager(config_file)
 
         #load widgets from the view
         self.trview_taxonref = view.trview_taxonref
         
         #load widgets to the view
-        self.dbwidget = DatabaseConnection() #PN_DatabaseStatusWidget()
+        self.dbwidget = database.DatabaseConnection() #PN_DatabaseStatusWidget()
         self.window.statusBar().addPermanentWidget(self.dbwidget)
 
         self.trview_properties =  PN_JsonQTreeView ()
@@ -729,10 +735,10 @@ class MainWindowController:
         if not self.connected:
             return
     #load the specific taxa database functions
-        taxa = PN_dbTaxa(self.dbwidget)
+        taxa = database.PN_dbTaxa(self.dbwidget)
     #initialize the registry database services
-        functions._registry = None
-        functions.init_registry(functions.ServiceRegistry(self.dbwidget, taxa=taxa))
+        database._registry = None
+        database.init_registry(database.ServiceRegistry(self.dbwidget, taxa=taxa))
     #set the APG options into self.combo_taxa
         lst = db_taxa().db_get_clades()
         for clade in lst:

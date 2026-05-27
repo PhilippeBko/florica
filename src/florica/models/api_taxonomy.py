@@ -115,10 +115,11 @@ class API_Abstract ():
         """
         Translate a taxonomic rank string or integer to a standard English rank name.
         Args:
-            _rank (str): The input rank string (may include accents or abbreviations).
+        _rank (str): The input rank string (may include accents or abbreviations).
         Returns:
-            str: Standardized rank name capitalized, or 'Unknown' if not found.
+        str: Standardized rank name capitalized, or 'Unknown' if not found.
         """
+        
         rank_translate = {
             'order' : ['ordre', 8],
             'family':['famille', 'fam', 10],
@@ -174,11 +175,11 @@ class API_Abstract ():
         Get the response from a URL and set the self.API_result.
         list_items = key(s) to search in _api_result (ex: ["results", "data"], search for dict ["results"]["data"])
         Args:
-            url (str): URL to request.
-            list_items (list): List of key(s) to search in _api_result
-            field_name (str): Field name to search in self.API_result
-            field_id (str): Field id to search in self.API_result
-            filters (dict, optional): Filters to apply when searching the self.API_result
+        -url (str): URL to request.
+        -list_items (list): List of key(s) to search in _api_result
+        -field_name (str): Field name to search in self.API_result
+        -field_id (str): Field id to search in self.API_result
+        -filters (dict, optional): Filters to apply when searching the self.API_result
         """
         _api_result = self.get_responseAPI (url)
         self.ls_metadata["url"] = url

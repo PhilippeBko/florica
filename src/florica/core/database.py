@@ -7,6 +7,32 @@ from PyQt5.QtCore import QFile, QTextStream, Qt, QEvent, pyqtSignal
 
 from florica.core import functions
 
+# global functions to access to the current instance of database connexion
+_registry = None
+class ServiceRegistry:
+    def __init__(self, dbconn, taxa=None, plot=None):
+        self.db = dbconn
+        self.taxa = taxa
+        self.plot = plot
+
+def init_registry(registry):
+    global _registry
+    if _registry is not None:
+        raise RuntimeError("Registry already initialized")
+    _registry = registry
+
+def services():
+    if _registry is None:
+        raise RuntimeError("Registry not initialized")
+    return _registry
+
+def dbtaxa():
+    return services().taxa
+
+def db():
+    return services().db
+
+
 
 class DatabaseConnection (QtWidgets.QWidget):
     """
@@ -812,7 +838,6 @@ class PN_dbTaxa:
                     tab_inbase = json_props[_key]
                     if tab_inbase is not None:
                         for _key2, _value2 in tab_inbase.items():
-                            #_value2 = functions.get_str_value(_value2)
                             if _value2:
                                 _value[_key2] = _value2.title()
                 except Exception:

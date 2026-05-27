@@ -1,69 +1,52 @@
-import os
-import sys
+# import os
+# import sys
 
 import re
 from datetime import datetime
-from pathlib import Path
-BASE_DIR = Path(os.path.dirname(os.path.abspath(sys.argv[0]))).parent
+#from pathlib import Path
+# BASE_DIR = Path(os.path.dirname(os.path.abspath(sys.argv[0]))).parent
 
-def resource_path(*paths):
+# _registry = None
 
-    #t = Path(BASE_DIR).parent
-    #return os.path.join(t, *paths)
-    return os.path.join(BASE_DIR, *paths)
-
-
-
-
-# functions.py
-class ServiceRegistry:
-    def __init__(self, dbconn, taxa=None, plot=None):
-        self.db = dbconn
-        self.taxa = taxa
-        self.plot = plot
-
-
-_registry = None
-
-def init_registry(registry):
-    global _registry
-    if _registry is not None:
-        raise RuntimeError("Registry already initialized")
-    _registry = registry
-
-def services():
-    if _registry is None:
-        raise RuntimeError("Registry not initialized")
-    return _registry
-
-def dbtaxa():
-    return services().taxa
-
-def db():
-    return services().db
-
-
-# class AppContext:
-#     def __init__(self, PN_database):
-#         self.dbtaxa = PN_database
-
-
-# _context = None
-
-# def init_context(context: AppContext):
-#     global _context
-#     if _context is not None:
-#         raise RuntimeError("Context already initialized")
-#     _context = context
-
-# def dbase() -> AppContext:
-#     if _context is None:
-#         raise RuntimeError("Context not initialized")
-#     return _context.dbtaxa
+# def resource_path(*paths):
+#     """
+#     Return absolute path to resource, works for dev and for PyInstaller
+#     """
+#     #t = Path(BASE_DIR).parent
+#     #return os.path.join(t, *paths)
+#     return os.path.join(BASE_DIR, *paths)
 
 
 
 
+# # global functions to access to the current instance of database connexion
+# class ServiceRegistry:
+#     def __init__(self, dbconn, taxa=None, plot=None):
+#         self.db = dbconn
+#         self.taxa = taxa
+#         self.plot = plot
+
+# def init_registry(registry):
+#     global _registry
+#     if _registry is not None:
+#         raise RuntimeError("Registry already initialized")
+#     _registry = registry
+
+# def services():
+#     if _registry is None:
+#         raise RuntimeError("Registry not initialized")
+#     return _registry
+
+# def dbtaxa():
+#     return services().taxa
+
+# def db():
+#     return services().db
+
+
+#global dictionaries and list reflecting the database structure
+list_month = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+list_strata = ["", "Understorey", "Sub-canopy", "Canopy", "Emergent"]
 
 #synonyms for database value
 dict_strata = {
@@ -72,6 +55,8 @@ dict_strata = {
     "canopy": [3, "canopée", "cubierta"], 
     "emergent": [4, "émergent","emergente"]
 }
+"""Dictionaries that allow matching the names of the months in the form of abbreviations, full names and numbers in French, English and Spanish."""
+
 dict_month = {
     1: ["january","enero","janvier", "janv.", "jan.", "ene."], 
     2: ["february","febrero", "février", "feb.", "fev.", "fév."], 
@@ -86,30 +71,32 @@ dict_month = {
     11: ["november", "noviembre", "novembre", "nov."], 
     12: ["december", "diciembre", "décembre", "déc.", "dec.", "dic."]
 }
+"""Dictionaries that allow matching the names of the months in the form of abbreviations, full names and numbers in French, English and Spanish."""
+
+
+dict_traits = {
+    "stems": {"synonyms" : ['nb_stem', 'nb_tiges', 'tiges', 'tronc'], "type" : 'integer', "min": 1, "default":1, "tip": 'Number of stems at Breast Height [1m30]'},
+    "dbh": {"synonyms" : ['dhp', 'dbh_cm'], "type" : "numeric", "unit" : 'cm', "plot" :"hist", "min": 0, "max": 500, "tip": 'Diameter at Breast Height or 1m30 from the ground'},
+    "height":  {"synonyms" : ['hauteur', 'height_m'], "type" : "numeric", "unit" : 'm', "plot" :"hist", "min": 1, "max": 100, "tip": 'Height of the tree'},
+    "strata": {"synonyms" : ['strate'], "type" : "text", "translate": dict_strata, "tip": 'Tree stratum in the vertical direction'},
+    "bark_thickness": {"synonyms" : ['bark_thick'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "min": 1, "tip": 'Thickness of tree bark'},
+    "leaf_area": {"synonyms" : ['leafarea', 'leaf_area_cm2', 'leaf_area_cm²'], "type" : "numeric", "unit" : 'cm²', "plot" :"hist", "min": 0.01, "decimal": 5, "tip": 'Area of a leaf unit'},
+    "leaf_sla": {"synonyms" : ['sla', 'leafsla'], "type" : "numeric", "unit" : 'mm²/mg', "plot" :"hist", "min": 1, "max": 50, "decimal": 5, "tip": 'Specific Leaf Area'},
+    "leaf_ldmc": {"synonyms" : ['ldmc', 'leafldmc'], "type" : "numeric", "unit" : 'mg/g', "plot" :"hist", "min": 10, "max": 1000, "tip": 'Leaf Dry Matter Content'},
+    "leaf_thickness": {"synonyms" : ['leafthickness'], "type" : "numeric", "unit" : 'µm', "plot" :"hist", "min":10, "max": 1000, "tip": 'Thickness of the leaf'},
+    "wood_density": {"synonyms" : ['wd', 'wood_dens'],"type" : "numeric", "unit" : 'g/cm3', "plot" :"hist", "min": 0.1, "max": 2, "decimal": 5, "tip": 'Density of a wood core'},
+    "leaf_dry_weight": {"synonyms" : ['leafdryweight', 'dryleafmass', 'leafdrymatter', 'leaf_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 1, "max": 100000, "decimal": 2, "tip": 'Weight of a dry leaf unit'},
+    "leaf_fresh_weight": {"synonyms" : ['leaffreshweight', 'freshleafmass', 'leaffreshmatter', 'leaf_fresh_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 10, "decimal": 2, "tip": 'Weight of a fresh leaf unit'},
+    "wood_core_diameter": {"synonyms" : ['core_diameter', 'core_diameter_mm', 'woodcorediameter'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Diameter of the wood core'},
+    "wood_core_length": {"synonyms" : ['core_length', 'woodcorelength', 'core_length_mm'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Length of the wood core'},
+    "wood_core_weight": {"synonyms" : ['core_weight', 'core_dry_weight', 'woodcoreweight', 'core_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "decimal": 3, "tip": 'Dry weight of the wood core'}
+                }
 
 """ list_db_type_translate = {1:'boolean', 2:'integer', 3:'integer', 4:'integer', 5:'integer', 6:'numeric', 7: 'text', 10:'text', 14: 'date', 15:'date', 16:'date',
                           'bigint': 'integer', 'character varying': 'text','double precision' : 'numeric', 'real': 'numeric', 'smallint' : 'integer', 
                           'int64': 'integer', 'bool': 'boolean', 'float64': 'numeric'}
  """
-
-list_db_traits = {
-                    "stems": {"synonyms" : ['nb_stem', 'nb_tiges', 'tiges', 'tronc'], "type" : 'integer', "min": 1, "default":1, "tip": 'Number of stems at Breast Height [1m30]'},
-                    "dbh": {"synonyms" : ['dhp', 'dbh_cm'], "type" : "numeric", "unit" : 'cm', "plot" :"hist", "min": 0, "max": 500, "tip": 'Diameter at Breast Height or 1m30 from the ground'},
-                    "height":  {"synonyms" : ['hauteur', 'height_m'], "type" : "numeric", "unit" : 'm', "plot" :"hist", "min": 1, "max": 100, "tip": 'Height of the tree'},
-                    "strata": {"synonyms" : ['strate'], "type" : "text", "translate": dict_strata, "tip": 'Tree stratum in the vertical direction'},
-                    "bark_thickness": {"synonyms" : ['bark_thick'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "min": 1, "tip": 'Thickness of tree bark'},
-                    "leaf_area": {"synonyms" : ['leafarea', 'leaf_area_cm2', 'leaf_area_cm²'], "type" : "numeric", "unit" : 'cm²', "plot" :"hist", "min": 0.01, "decimal": 5, "tip": 'Area of a leaf unit'},
-                    "leaf_sla": {"synonyms" : ['sla', 'leafsla'], "type" : "numeric", "unit" : 'mm²/mg', "plot" :"hist", "min": 1, "max": 50, "decimal": 5, "tip": 'Specific Leaf Area'},
-                    "leaf_ldmc": {"synonyms" : ['ldmc', 'leafldmc'], "type" : "numeric", "unit" : 'mg/g', "plot" :"hist", "min": 10, "max": 1000, "tip": 'Leaf Dry Matter Content'},
-                    "leaf_thickness": {"synonyms" : ['leafthickness'], "type" : "numeric", "unit" : 'µm', "plot" :"hist", "min":10, "max": 1000, "tip": 'Thickness of the leaf'},
-                    "wood_density": {"synonyms" : ['wd', 'wood_dens'],"type" : "numeric", "unit" : 'g/cm3', "plot" :"hist", "min": 0.1, "max": 2, "decimal": 5, "tip": 'Density of a wood core'},
-                    "leaf_dry_weight": {"synonyms" : ['leafdryweight', 'dryleafmass', 'leafdrymatter', 'leaf_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 1, "max": 100000, "decimal": 2, "tip": 'Weight of a dry leaf unit'},
-                    "leaf_fresh_weight": {"synonyms" : ['leaffreshweight', 'freshleafmass', 'leaffreshmatter', 'leaf_fresh_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 10, "decimal": 2, "tip": 'Weight of a fresh leaf unit'},
-                    "wood_core_diameter": {"synonyms" : ['core_diameter', 'core_diameter_mm', 'woodcorediameter'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Diameter of the wood core'},
-                    "wood_core_length": {"synonyms" : ['core_length', 'woodcorelength', 'core_length_mm'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Length of the wood core'},
-                    "wood_core_weight": {"synonyms" : ['core_weight', 'core_dry_weight', 'woodcoreweight', 'core_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "decimal": 3, "tip": 'Dry weight of the wood core'}                    
-                }
-list_db_identity = {
+dict_identity = {
                     "id" : {"synonyms" : ['id_individu', 'id_source', 'id_occurence', 'id_first_image', 'idoccurrence', 'id_collectionobject'], 
                             "type" : "integer"},
                     "taxaname" : {"synonyms" : ['taxa', 'taxonname', 'taxon', 'plantname', 'original_name','scientificname', 'nom_taxon_ref', 'nom_taxon', 'nomtaxon',
@@ -128,12 +115,11 @@ list_db_identity = {
                     "y": {"synonyms" : ['y_coordinate','coord_y', 'coordy'], "type" : 'numeric', "min": 0,  "tip": 'Y coordinate on the plot'}, 
                 }
 
-list_month = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-list_strata = ["", "Understorey", "Sub-canopy", "Canopy", "Emergent"]
-list_db_traits["strata"]["items"] = list_strata
-list_db_identity["month"]["items"] = list_month
-list_db_fields = list_db_identity | list_db_traits
-list_numeric_db_fields = {key: value for key, value in list_db_fields.items() if value["type"] == "numeric"}
+
+dict_traits["strata"]["items"] = list_strata
+dict_identity["month"]["items"] = list_month
+dict_db_fields = dict_identity | dict_traits
+# list_numeric_db_fields = {key: value for key, value in dict_db_fields.items() if value["type"] == "numeric"}
 
 
 # list_db_properties = {
@@ -179,27 +165,27 @@ flower_reg_pattern = r'fl\.*|bt\.*|boutons?|cauliflor(e|a|ous)?|fert(?:ile|\.|)|
 fruit_reg_pattern = r'fr\.*|figues?|fruits?|c[ôo]nes?|graines?|seeds?|figs?'
 
 
-def get_column_type(_type):
-    #convert types in a standard postgresql format
-    if _type in ['boolean', 'integer', 'numeric', 'text', 'date']:
-        return _type
-    elif _type in [1, 'bool']:
-        return 'boolean'
-    elif _type in [2,3,4,5,'bigint', 'smallint', 'int64', 'int32', 'int4','int2', 'int8']:
-        return 'integer'
-    elif _type in [6, 'double precision', 'real', 'float64', 'float32', 'float8', 'float4']:
-        return 'numeric'
-    elif _type in [7, 10, 'character varying', 'varchar', 'char']:
-        return 'text'
-    elif _type in [14, 15, 16, 20,'timestamp with time zone', 'timestamptz']:
-        return 'date'
-    else:
-        return _type
+# def get_column_type(_type):
+#     """Convert types in a standard postgresql format"""
+#     if _type in ['boolean', 'integer', 'numeric', 'text', 'date']:
+#         return _type
+#     elif _type in [1, 'bool']:
+#         return 'boolean'
+#     elif _type in [2,3,4,5,'bigint', 'smallint', 'int64', 'int32', 'int4','int2', 'int8']:
+#         return 'integer'
+#     elif _type in [6, 'double precision', 'real', 'float64', 'float32', 'float8', 'float4']:
+#         return 'numeric'
+#     elif _type in [7, 10, 'character varying', 'varchar', 'char']:
+#         return 'text'
+#     elif _type in [14, 15, 16, 20,'timestamp with time zone', 'timestamptz']:
+#         return 'date'
+#     else:
+#         return _type
 
-def postgres_error(error):
-    #convert the postgresl error in a text
-    tab_text = error.text().split("\n")
-    return '\n'.join(tab_text[:3])
+# def postgres_error(error):
+#     """Convert the postgresl error in a text"""
+#     tab_text = error.text().split("\n")
+#     return '\n'.join(tab_text[:3])
     
 # def get_postgres_name(name):
 #     #check and correct invalid characters to be compatible with fields and database typography of postgresql
@@ -210,18 +196,20 @@ def postgres_error(error):
 #     return name
 
 def get_all_names(fieldref):
-    #return the list of names (key + synonyms) from list_db_fields
-    if fieldref in list_db_fields:
-        return [fieldref] + list_db_fields[fieldref].get("synonyms", [])
+    #return the list of names (key + synonyms) from dict_db_fields
+    if fieldref in dict_db_fields:
+        return [fieldref] + dict_db_fields[fieldref].get("synonyms", [])
     return []
 
 def get_reference_field(fieldname):
-    #return the field_ref from a fieldname, check in key and synonyms of list_db_fields
-    if fieldname in list_db_fields:
+    #return the field_ref from a fieldname, check in key and synonyms of dict_db_fields
+    if fieldname in dict_db_fields:
         return fieldname
-    for key, value in list_db_fields.items():
+    for key, value in dict_db_fields.items():
         if fieldname in value.get("synonyms", '[]'):
             return key
+
+
 
 def get_str_value (value):
     """     
@@ -232,8 +220,6 @@ def get_str_value (value):
         return value
     else:
         return ''
-
-
 
 def get_dict_from_species(taxa: str):
     """

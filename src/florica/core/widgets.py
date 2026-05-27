@@ -24,8 +24,11 @@ def load_ui_from_resources(ui_name):
 
 
 
-##class LinkDelegate to create hyperlink of the QTreeView from Qtreeview_Json
-class LinkDelegate(QtWidgets.QStyledItemDelegate):
+##class HyperLinkDelegate to create hyperlink of the QTreeView from Qtreeview_Json
+class HyperLinkDelegate(QtWidgets.QStyledItemDelegate):
+    """
+    A custom item delegate that handles internet hyperlinks in a QTreeView.
+    """
     def paint(self, painter, option, index):
         text = index.data()
         # check for an internet hyperlink
@@ -87,7 +90,7 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         self.dict_db_properties = {}
         self.id = None
         self.checkable = checkable
-        link_delegate = LinkDelegate()
+        link_delegate = HyperLinkDelegate()
         self.setItemDelegate(link_delegate)
         self.list_inRows = list_inRows
         self.header().setDefaultAlignment(Qt.AlignCenter)
@@ -99,6 +102,28 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
 
     def refresh(self):
         self.setData(self.dict_db_properties)
+
+    def changed (self):
+    #test the equality between the db and user tab properties
+        return (self.dict_db_properties != self.dict_user_properties())
+
+    def _validate(self, index = None):
+    #test if changed, underline column 0 for changed value and emit a signal
+        if index is not None:
+            font = QtGui.QFont()
+            _bold = False
+            try:
+                field_table = index.parent().data(0).lower()
+                field_name = index.siblingAtColumn(0).data().lower()
+                field_value = index.siblingAtColumn(1).data()
+                _bold = (field_value != self.dict_db_properties[field_table][field_name])
+            except Exception:
+                pass
+            font.setUnderline(_bold)
+            self.model().setData(index.siblingAtColumn(0), font, Qt.FontRole)
+        self.changed_signal.emit(self.changed())
+
+
 
     def setData(self, json_data = None):
     #set the json_data into the treeview model
@@ -190,25 +215,7 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
                 tab_value[key] = tab_tmp
         return (tab_value)
 
-    def changed (self):
-    #test the equality between the db and user tab properties
-        return (self.dict_db_properties != self.dict_user_properties())
 
-    def _validate(self, index = None):
-    #test if changed, underline column 0 for changed value and emit a signal
-        if index is not None:
-            font = QtGui.QFont()
-            _bold = False
-            try:
-                field_table = index.parent().data(0).lower()
-                field_name = index.siblingAtColumn(0).data().lower()
-                field_value = index.siblingAtColumn(1).data()
-                _bold = (field_value != self.dict_db_properties[field_table][field_name])
-            except Exception:
-                pass
-            font.setUnderline(_bold)
-            self.model().setData(index.siblingAtColumn(0), font, Qt.FontRole)
-        self.changed_signal.emit(self.changed())
 
 
 
@@ -295,25 +302,27 @@ class MessageBox(QtWidgets.QMessageBox):
 
 class ConfigManager:
     """
-    The main class to manage the config parameters into the config_path with configparser
+    The main class for managing configuration settings in the config_path.
     """
     def __init__(self, config_path: str):
         self.config_path = config_path
         self.config = configparser.ConfigParser()
-        self.load()
-
-    def load(self):
         if os.path.exists(self.config_path):
             self.config.read(self.config_path)
 
-    def save(self):
+    # def load(self):
+    #     if os.path.exists(self.config_path):
+    #         self.config.read(self.config_path)
+
+    def _save(self):
+        """Save the configuration settings to the config_path file."""
         with open(self.config_path, "w") as f:
             self.config.write(f)
 
     # ---------------- PostgreSQL ----------------
     @property
     def postgresql(self):
-        """Retourne un dict avec les paramètres PostgreSQL"""
+        """Get or set a dictionary with the PostgreSQL connection parameters."""
         if "postgresql" not in self.config:
             return {"host": "", "user": "", "password": "", "database": ""}
         pg = self.config["postgresql"]
@@ -330,11 +339,12 @@ class ConfigManager:
         if "postgresql" not in self.config:
             self.config["postgresql"] = {}
         self.config["postgresql"].update(values)
-        self.save()
+        self._save()
 
     # ---------------- Theme ----------------
     @property
     def theme(self):
+        """Get or set the theme name from config file"""
         if "settings" not in self.config:
             return None
         return self.config["settings"].get("theme", None)
@@ -344,14 +354,14 @@ class ConfigManager:
         if "settings" not in self.config:
             self.config["settings"] = {}
         self.config["settings"]["theme"] = theme_name
-        self.save()
+        self._save()
 
 
 
 
 class PostgresConfigDialog(QtWidgets.QDialog):
     """
-        A Qt Dialog to configure and test the PostgreSQL connection
+        A Qt Dialog to configure, test and load the PostgreSQL connection
     """
     def __init__(self, config_manager, parent=None):
         super().__init__(parent)
@@ -475,11 +485,6 @@ class PostgresConfigDialog(QtWidgets.QDialog):
 
         if connexion_ok:
             MessageBox().information_msgbox("Connection OK", "Connection successful.")
-            # QtWidgets.QMessageBox.information(
-            #     self,
-            #     "Connection OK",
-            #     "Connection successful."
-            # )
 
         self.validated = connexion_ok
         self.btn_ok.setEnabled(connexion_ok)

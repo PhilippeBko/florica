@@ -9,10 +9,22 @@ Florica
    :undoc-members:
    :exclude-members: toolbox_click
 
+.. automodule:: florica.models.taxa_model
+   :members:
+
+   :undoc-members:
+.. automodule:: florica.models.api_taxonomy
+   :members:
+   :undoc-members:
+
 .. automodule:: florica.core.database
    :members:
    :undoc-members:
 
-.. automodule:: florica.models.taxa_model
+.. automodule:: florica.core.widgets
+   :members:
+   :undoc-members:
+
+.. automodule:: florica.core.functions
    :members:
    :undoc-members:

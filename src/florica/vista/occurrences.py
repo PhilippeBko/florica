@@ -7,7 +7,7 @@ from PyQt5.QtGui import QStandardItem
 from PyQt5.QtCore import Qt, QSortFilterProxyModel, QItemSelectionModel, pyqtSignal
 
 from core.widgets import PN_JsonQTreeView, PN_DatabaseConnect
-from core.functions import list_db_fields, list_db_traits, get_str_value, postgres_error
+from core.functions import dict_db_fields, dict_traits, get_str_value, postgres_error
 from models.taxa_model import PNSynonym, PNSynonym_edit
 from models.occ_model import PN_taxa_resolution_model, PN_occ_model, PN_occ_tables, PN_occ_explore
 
@@ -295,7 +295,7 @@ class MainWindow(QtWidgets.QMainWindow):
         model = QtGui.QStandardItemModel()
         model.setColumnCount(1)
         self.window.tblview_traits_dataset.setModel(model)
-        ls_traits = ['location', 'phenology'] + list(list_db_traits.keys())
+        ls_traits = ['location', 'phenology'] + list(dict_traits.keys())
         for traits in ls_traits:
             item = QtGui.QStandardItem(traits)
             model.appendRow([item])
@@ -834,7 +834,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # fields_toinclude = self.trView_occ.fieldstoUse(union=include)
         for fieldPlot in self.myPlotClass.graphTypes:
             try:
-                # if fieldPlot in list_db_traits :
+                # if fieldPlot in dict_traits :
                 #     if fieldPlot in fields_toinclude:
                 #         self.window.cb_figures.addItem(fieldPlot)
                 # else:
@@ -936,7 +936,7 @@ class MainWindow(QtWidgets.QMainWindow):
             min_value = query.value("min")
             max_value = query.value("max")
             fieldref = query.value("fieldref")
-            if fieldref not in list_db_fields:
+            if fieldref not in dict_db_fields:
                 fieldref = None
             # add the result into the headers dictionnary
             headers[header] = {"fieldref" : fieldref, "type" : _type,   "non null": non_null_value, "duplicated" : duplicated_value, "min" : min_value, "max" : max_value}
@@ -1030,7 +1030,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 #header =  self.tblView_data.horizontalHeader()
                 header = self.tblView_data.model().headerData(col, Qt.Horizontal)
                 i += 1
-                if header in list_db_fields:
+                if header in dict_db_fields:
                     self.tblView_data.setColumnHidden(col, header not in columns)
             
         return
@@ -1038,7 +1038,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #     #columns2 = ['dataset', 'occurrences', 'location']
         #     for col in range(1, self.tblView_explore.model().columnCount()):
         #         header = self.tblView_explore.model().headerData(col, Qt.Horizontal)
-        #         if header in list_db_fields:
+        #         if header in dict_db_fields:
         #             self.tblView_explore.setColumnHidden(col, header not in columns)
         #     self.cb_figures_fill()
         #     self.figure_reset()

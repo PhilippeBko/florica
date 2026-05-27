@@ -15,7 +15,7 @@ from PyQt5.QtCore import Qt
 from models.occ_model import PN_taxa_resolution_model
 from models.taxa_model import PNSynonym, PN_TaxaSearch
 from core.widgets import PN_JsonQTreeView, PN_dbTaxa , PN_DatabaseConnect
-from core.functions import (get_str_value, get_all_names, get_reference_field, postgres_error, list_db_fields, 
+from core.functions import (get_str_value, get_all_names, get_reference_field, postgres_error, dict_db_fields, 
                            flower_reg_pattern, fruit_reg_pattern, AppContext, init_context
                            )
 ########################################
@@ -29,16 +29,16 @@ DBASE_SCHEMA_TAXONOMY = 'taxonomy'
 DBASE_SCHEMA_TREES = DBASE_SCHEMA + '.trees'
 DBASE_SCHEMA_PLOTS = DBASE_SCHEMA + '.plots'
 
-#structure of the trees/plots tables, based on list_db_fields
+#structure of the trees/plots tables, based on dict_db_fields
 #field_name :{value, type, items, translate, unit, decimal, min, max, editable, enabled, tip, details, synonyms}
 dict_db_plot = {
                 "id_plot": {"value" : None, "type" : 'integer', 'enabled': False},
                 "collection": {"value" : None, "type" : 'text', "editable" : True},
-                "locality":list_db_fields["locality"],
+                "locality":dict_db_fields["locality"],
                 "plot": {"value" : None, "type" : 'text'},
-                "longitude":list_db_fields["longitude"],
-                "latitude":list_db_fields["latitude"],
-                "altitude":list_db_fields["altitude"],
+                "longitude":dict_db_fields["longitude"],
+                "latitude":dict_db_fields["latitude"],
+                "altitude":dict_db_fields["altitude"],
                 "type": {"value" : None, "type" : 'text', "items" : ["Circle", "Point", "Rectangle"]},
                 "width": {"value" : None, "type" : 'numeric'},
                 "radius": {"value" : None, "type" : 'numeric', "visible": False},
@@ -48,24 +48,24 @@ dict_db_plot = {
 
 dict_db_tree = {
                 "id_tree": {"value" : None, "type" : 'integer', 'enabled': False},  
-                "identifier":list_db_fields["identifier"],
-                "taxaname" :list_db_fields["taxaname"],
-                "month":list_db_fields["month"],
-                "year":list_db_fields["year"],
-                "strata":list_db_fields["strata"],
-                "stems":list_db_fields["stems"],                
-                "dbh":list_db_fields["dbh"],
-                "height":list_db_fields["height"],
-                "bark_thickness":list_db_fields["bark_thickness"],
-                "leaf_area":list_db_fields["leaf_area"],
-                "wood_density":list_db_fields["wood_density"],
-                "leaf_sla":list_db_fields["leaf_sla"],
-                "leaf_ldmc":list_db_fields["leaf_ldmc"],
-                "x":list_db_fields["x"],
-                "y":list_db_fields["y"],
+                "identifier":dict_db_fields["identifier"],
+                "taxaname" :dict_db_fields["taxaname"],
+                "month":dict_db_fields["month"],
+                "year":dict_db_fields["year"],
+                "strata":dict_db_fields["strata"],
+                "stems":dict_db_fields["stems"],                
+                "dbh":dict_db_fields["dbh"],
+                "height":dict_db_fields["height"],
+                "bark_thickness":dict_db_fields["bark_thickness"],
+                "leaf_area":dict_db_fields["leaf_area"],
+                "wood_density":dict_db_fields["wood_density"],
+                "leaf_sla":dict_db_fields["leaf_sla"],
+                "leaf_ldmc":dict_db_fields["leaf_ldmc"],
+                "x":dict_db_fields["x"],
+                "y":dict_db_fields["y"],
                 "notes":  {"value" : None, "type" : 'memo',"synonyms" : ['comment', 'comments', 'commentaire', 'note'], "tip": 'Some notes about the observation'}, 
-                "flower":list_db_fields["flower"],
-                "fruit":list_db_fields["fruit"],
+                "flower":dict_db_fields["flower"],
+                "fruit":dict_db_fields["fruit"],
                 "dead": {"value" : None, "type" : 'boolean', "default": False, "tip": 'Is the plant is dead ?'},
                 "time_updated": {"value" : None, "type" : 'date', 'enabled': False},
                 "history": {"value" : None, "type" : 'integer', 'enabled': False, 'visible': False}
@@ -82,8 +82,8 @@ def get_typed_value(field_name, field_value, for_sql = False):
 #high level function, return the value casted to the right type, raised an error if not possible
     if field_name in dict_db_ncpippn:
         field_def = dict_db_ncpippn[field_name]
-    elif field_name in list_db_fields:
-        field_def = list_db_fields[field_name]
+    elif field_name in dict_db_fields:
+        field_def = dict_db_fields[field_name]
     else:
         return
     _type = field_def["type"]
@@ -223,7 +223,7 @@ class CSVImporter(QtWidgets.QDialog):
         else:
             field_name = index.siblingAtColumn(1).data()
             field_name = get_reference_field(field_name)
-            field_def = list_db_fields[field_name]
+            field_def = dict_db_fields[field_name]
 
         column_txt = field_name.upper() + " [" + field_def["type"] + "]"
         self.window.label_db_column.setText(column_txt)
@@ -318,15 +318,15 @@ class CSVImporter(QtWidgets.QDialog):
 
         #add subfields according to composite fields
         if self.dict_trees_import.get ("leaf_sla", None):
-            self.dict_trees_import["leaf_dry_weight"] = list_db_fields["leaf_dry_weight"].copy()
-            self.dict_trees_import["leaf_area"] = list_db_fields["leaf_area"].copy()
+            self.dict_trees_import["leaf_dry_weight"] = dict_db_fields["leaf_dry_weight"].copy()
+            self.dict_trees_import["leaf_area"] = dict_db_fields["leaf_area"].copy()
         if self.dict_trees_import.get ("leaf_ldmc", None):
-            self.dict_trees_import["leaf_fresh_weight"] = list_db_fields["leaf_fresh_weight"].copy()
-            self.dict_trees_import["leaf_dry_weight"] = list_db_fields["leaf_dry_weight"].copy() 
+            self.dict_trees_import["leaf_fresh_weight"] = dict_db_fields["leaf_fresh_weight"].copy()
+            self.dict_trees_import["leaf_dry_weight"] = dict_db_fields["leaf_dry_weight"].copy() 
         if self.dict_trees_import.get ("wood_density", None):
-            self.dict_trees_import["wood_core_diameter"] = list_db_fields["wood_core_diameter"].copy()
-            self.dict_trees_import["wood_core_length"] = list_db_fields["wood_core_length"].copy() 
-            self.dict_trees_import["wood_core_weight"] = list_db_fields["wood_core_weight"].copy()
+            self.dict_trees_import["wood_core_diameter"] = dict_db_fields["wood_core_diameter"].copy()
+            self.dict_trees_import["wood_core_length"] = dict_db_fields["wood_core_length"].copy() 
+            self.dict_trees_import["wood_core_weight"] = dict_db_fields["wood_core_weight"].copy()
 
         #set the imported structure to any fields ({"column": header, "value": None, "code" : None})
         imported = 0
@@ -408,7 +408,7 @@ class CSVImporter(QtWidgets.QDialog):
                         self.dict_identifier_toUpdate[query.value("identifier")] = [query.value("id_plot"), query.value("plot")]
             else:
                 #error the CSV file must contain an identifier
-                msg = str(['identifier'] + list_db_fields["identifier"]["synonyms"])
+                msg = str(['identifier'] + dict_db_fields["identifier"]["synonyms"])
                 msg = "CSV file must contain one unique identifier column from " + msg
                 QtWidgets.QMessageBox.critical(None, "No identifier", msg, QtWidgets.QMessageBox.Ok)
                 model = QtGui.QStandardItemModel()
@@ -507,7 +507,7 @@ class CSVImporter(QtWidgets.QDialog):
             field_name = item0.text()
             field_def = self.dict_trees_import.get(field_name, None)
             if field_def is None:
-                field_def = list_db_fields.get(field_name, None)
+                field_def = dict_db_fields.get(field_name, None)
             if field_def is None:
                 continue
             import_value = None
@@ -2495,8 +2495,8 @@ class MainWindow(QtWidgets.QMainWindow):
         fieldname = ['dbh','height', 'bark_thickness', 'leaf_area', 'leaf_ldmc', 'leaf_sla', 'wood_density']
         tab_sql = []
         for item in fieldname:
-            decimal = list_db_fields[item].get("decimal", PLOT_DEFAULT_DECIMAL)
-            unit = list_db_fields[item].get("unit", 'NULL')
+            decimal = dict_db_fields[item].get("decimal", PLOT_DEFAULT_DECIMAL)
+            unit = dict_db_fields[item].get("unit", 'NULL')
             sql = f"""SELECT 
                         '{item}' as key, count({item}), round(avg({item}), {decimal}) as avg, 
                         round(min ({item}), {decimal}) as min, round(max({item}), {decimal}) as max, 
