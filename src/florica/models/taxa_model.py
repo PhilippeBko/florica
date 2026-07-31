@@ -1,6 +1,9 @@
 # Standard library
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
+
+
 
 # Third-party
 import requests
@@ -12,6 +15,9 @@ from florica.core import functions
 from florica.core.widgets import load_ui_from_resources
 from florica.models.api_taxonomy import API_Taxonomy
 from florica.core import database
+from florica.core import wfo_graphsql
+
+
 
 
 ########################################
@@ -96,7 +102,8 @@ class PNTaxa(object):
         """
         Returns True if the taxa is an autonym for variety and subspecies
         """
-        if self.id_rank not in [22,23]:
+        if self.rank_name in ['variety', 'subspecies']:
+        #if self.id_rank not in [22,23]:
             return False
         return self._part_name ("autonym")
 
@@ -105,7 +112,8 @@ class PNTaxa(object):
         """
         Returns the basic name of a taxon (not a compound one)
         """
-        if self.id_rank < 21:
+        _idrankspecies = db_taxa().db_get_rank('species', 'id_rank')
+        if self.id_rank < _idrankspecies:
             return self.taxaname.lower()
         return self._part_name ("basename")
     
@@ -205,22 +213,13 @@ class PNTaxa_with_Score(PNTaxa):
         except Exception:
             return None
 
+
+
+
 class PNTaxa_search(QtWidgets.QWidget):
     """
     The PNTaxa_search class is a custom class that inherits from QtWidgets.QWidget.
     It is designed to display a search widget composed of a search text and a Qtreeview result with matched taxa and score.
-
-    Attributes:
-        lineEdit_search_taxa (QtWidgets.QLineEdit): The search text input field.
-        treeview_scoretaxa (QtWidgets.QTreeView): The treeview widget that displays the search results.
-
-    Methods:
-        __init__ : Initializes the search widget.
-        setText : Sets the text of the search input field.
-        selectedTaxa : Returns the selected taxon object.
-        selectedTaxonRef : Returns the reference of the selected taxon.
-        selectedScore : Returns the score of the selected taxon.
-        selectedTaxaId : Returns the ID of the selected taxon.
 
     Signals:
         selectionChanged (str): Emitted when the selection in the treeview changes.
@@ -244,52 +243,25 @@ class PNTaxa_search(QtWidgets.QWidget):
         self.treeview_scoretaxa.setModel(self.model)
         self.treeview_scoretaxa.setHeaderHidden(True)
         #connect slots
-        self.treeview_scoretaxa.selectionModel().selectionChanged.connect(self.on_selection_changed)
-        self.treeview_scoretaxa.doubleClicked.connect(self.on_doubleClicked)
-        self.lineEdit_search_taxa.textChanged.connect(self.on_text_changed)
+        self.treeview_scoretaxa.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self.treeview_scoretaxa.doubleClicked.connect(self._on_doubleClicked)
+        self.lineEdit_search_taxa.textChanged.connect(self._on_text_changed)
         # set the layout
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.lineEdit_search_taxa)
         layout.addWidget(self.treeview_scoretaxa)
         self.setLayout(layout)
 
-##external functions    
-    def setText(self, newtext):
-        self.lineEdit_search_taxa.setText(newtext)
-
-    def currentIndex(self):
-        return self.treeview_scoretaxa.currentIndex()
-    
-    def selectedTaxa(self):
-        return self.treeview_scoretaxa.currentIndex().siblingAtColumn(0).data()
-    
-    def selectedTaxonRef(self):
-        parent = self.treeview_scoretaxa.currentIndex().parent()
-        if parent.isValid():
-            return parent.data()
-        else:
-            return self.treeview_scoretaxa.currentIndex().data()
-        
-    def selectedTaxaId(self):
-        parent = self.treeview_scoretaxa.currentIndex().parent()
-        if parent.isValid():
-            return parent.data(Qt.UserRole)
-        else:
-            return self.treeview_scoretaxa.currentIndex().data(Qt.UserRole)
-    
-    def selectedScore(self):
-        return self.treeview_scoretaxa.currentIndex().siblingAtColumn(1).data()
-    
-    def on_selection_changed(self, selected):
+    def _on_selection_changed(self, selected):
         index = selected.indexes()[0] if selected.indexes() else None
         if index:
             selected_item = index.data()
             self.selectionChanged.emit(selected_item)  # Emit the slot selected_item
             
-    def on_doubleClicked(self, index):
+    def _on_doubleClicked(self, index):
         self.doubleClicked.emit(index)  # Emit the slot selected_item
 
-    def on_text_changed(self):
+    def _on_text_changed(self):
         #"main" function to search for taxa resolution
         self.model.clear()
         search_txt = self.lineEdit_search_taxa.text()
@@ -318,24 +290,50 @@ class PNTaxa_search(QtWidgets.QWidget):
             self.treeview_scoretaxa.header().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
             self.treeview_scoretaxa.header().setSectionResizeMode(1, QtWidgets.QHeaderView.Fixed)
 
+##external functions    
+    def setText(self, newtext):
+        """Set the text of the search input field."""
+        self.lineEdit_search_taxa.setText(newtext)
+
+    def currentIndex(self):
+        """Return the current Index of the treeview_scoretaxa"""
+        return self.treeview_scoretaxa.currentIndex()
+    
+    def selectedTaxa(self):
+        """Return the current selected taxa name"""
+        return self.currentIndex().siblingAtColumn(0).data()
+    
+    def selectedScore(self):
+        """Return the current selected taxa score"""
+        return self.currentIndex().siblingAtColumn(1).data()
+    
+    def selectedTaxonRef(self):
+        """Return the current selected taxonref"""
+        parent = self.currentIndex().parent()
+        if parent.isValid():
+            return parent.data()
+        else:
+            return self.currentIndex().data()
+        
+    def selectedTaxaId(self):
+        """Return the current selected id_taxonref"""
+        parent = self.currentIndex().parent()
+        if parent.isValid():
+            return parent.data(Qt.UserRole)
+        else:
+            return self.currentIndex().data(Qt.UserRole)
+    
+    
+
+
 #class to search taxa through API
 class PNTaxa_searchAPI (QtCore.QThread):
     """
     Worker thread to query multiple biodiversity APIs asynchronously.
-
-    Emits:
-        Result_Signal (str, object): Signal emitted with API name and data dictionary or special status strings like "END" or "NOTCONNECTED".
-    Args:
-        parent (QObject): Parent QObject for the thread.
-        myPNTaxa (object, optional): Model or taxon object to query. Defaults to None.
-        filter (str, optional): Limits queries to a single API from the supported list. Defaults to None.
-    Attributes:
-        PNTaxa_model (object): The taxon model to query.
-        status (int): Thread status flag, 1 for running, 0 for stopped.
-        list_api (list): List of API names to query.
+    Emits api_signal with data dictionary and API name or special status strings like "END" or "NOTCONNECTED".
     """
 ##signals emitted       
-    Result_Signal = pyqtSignal(str, object)
+    api_signal = pyqtSignal(str, object)
 
 ##internal functions   
     def __init__(self, parent, myPNTaxa = None, filter = None):
@@ -362,18 +360,13 @@ class PNTaxa_searchAPI (QtCore.QThread):
         Signal to stop the thread's operation and emit an "END" signal.
         """
         try:
-            self.Result_Signal.emit("END", None)
+            self.api_signal.emit("END", None)
         finally :
             self.status = 0
 
     def run(self):
         """
-        Main thread loop that queries each API in the list sequentially.
-        Steps:
-            - Checks for internet connectivity.
-            - Iterates over the APIs to query metadata and synonyms.
-            - Emits results through Result_Signal.
-            - Stops if status is set to 0.
+        Main thread loop that queries each API in the list sequentially
         """        
         _list_api = {}
         
@@ -381,11 +374,11 @@ class PNTaxa_searchAPI (QtCore.QThread):
         try:
             requests.get("https://www.google.com", timeout=2)
         except Exception:
-            self.Result_Signal.emit("NOTCONNECTED", None)
+            self.api_signal.emit("NOTCONNECTED", None)
             return
         
         if self.PNTaxa_model is None:
-            self.Result_Signal.emit("END", None)
+            self.api_signal.emit("END", None)
             return
         #set the variables
         _name = self.PNTaxa_model.taxaname #simple_taxaname
@@ -427,7 +420,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
             if result is None :
                 continue
         #get the metadata
-            _json = result.get_metadata()
+            _json = self.api_Taxonomy.get_metadata()
             #delete None values
             if _json:
                 if "query time" in _json:
@@ -437,7 +430,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
             #add synonyms if exists and emit intermediate signal
             if _json:
                 total_match +=1
-                t_synonyms = result.get_synonyms()
+                t_synonyms = self.api_Taxonomy.get_synonyms()
                 if t_synonyms:
                     _json["synonyms"] = t_synonyms
 
@@ -459,7 +452,7 @@ class PNTaxa_searchAPI (QtCore.QThread):
             _score["authors_score"] = total_fullname / total_authors if total_authors > 0 else 0
             #emit intermediate signal
             _json["score"] = _score
-            self.Result_Signal.emit(str(api_name), _json)
+            self.api_signal.emit(str(api_name), _json)
 
             
             if self.status == 0 : 
@@ -470,9 +463,10 @@ class PNTaxa_searchAPI (QtCore.QThread):
         _score["taxaname_score"] = total_match / total_checked if total_checked > 0 else 0
         _score["authors_score"] = total_fullname / total_authors if total_authors > 0 else 0
         _list_api["score"] = _score
-        self.Result_Signal.emit("END", _list_api)
+        self.api_signal.emit("END", _list_api)
 
     
+
 
 #class to display a treeview with hiercharchical taxonomy
 class PNTaxa_QTreeView(QtWidgets.QTreeView):
@@ -499,6 +493,7 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
         model = self.model()
         model.clear()
         self.ls_hierarchy = None
+        _idrankphylum = database.dbtaxa().db_get_rank("phylum", "id_rank")
 
         # Get the hierarchy for the selected taxa from the dbase
         self.ls_hierarchy = myPNTaxa.list_hierarchy
@@ -523,7 +518,7 @@ class PNTaxa_QTreeView(QtWidgets.QTreeView):
         dict_idtaxonref = {}
         for item in ls_pn_taxa:
             _itemrank = item.rank_name
-            if not item.published and item.id_rank >=3:
+            if not item.published and item.id_rank >=_idrankphylum:
                 _itemrank += " (ined.)"
             dict_idtaxonref[item.idtaxonref] = [QtGui.QStandardItem(_itemrank), QtGui.QStandardItem(item.taxonref)]
 
@@ -635,12 +630,20 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.PNTaxa = myPNTaxa
         self.table_taxa = []
 
+        self.executor = ThreadPoolExecutor(max_workers=2)
+        self.wfo_parents_future = None
+        self.taxa_toAdd = None
+
+
+
         #set the ui
         self.window = load_ui_from_resources("pn_addtaxa.ui")
         self.window.trView_childs.setVisible(False)
-        self.window.combo_group.setVisible(False)
-        self.window.checkBox_filter_new.setVisible(False)
-        self.window.taxaLineEdit_result.setText('')
+        self.window.search_lineEdit.setVisible(False)
+        self.window.checkBox_add_synonyms.setVisible(False)
+        self.window.label_2.setText('')
+        #self.window.combo_group.setVisible(False)
+        #self.window.checkBox_filter_new.setVisible(False)
 
         #set buttons icons        
         button_apply = self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply)
@@ -655,36 +658,44 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.proxy.setSourceModel(model)
         self.window.trView_childs.setModel(self.proxy)
         self.window.trView_childs.setColumnWidth(0,250)
+        self.window.tabWidget_main.addTab(QtWidgets.QWidget(), 'WFO')
 
+        search_action = self.window.search_lineEdit.addAction(
+            QtGui.QIcon(":src/florica/resources/icons/search.png"),
+            QtWidgets.QLineEdit.ActionPosition.TrailingPosition
+        )
+        search_action.triggered.connect(self._do_search)
+        self.window.search_lineEdit.returnPressed.connect(self._do_search)
         #manage the combo_group
-        self.window.combo_group.addItem("All names")
-        self.window.combo_group.addItem(myPNTaxa.taxaname)
-        lst = db_taxa().db_get_clades()
-        for clade in lst:
-            self.window.combo_group.addItem(clade)
-        self.window.combo_group.setCurrentIndex(1)
+        # self.window.combo_group.addItem("All names")
+        # self.window.combo_group.addItem(myPNTaxa.taxaname)
+        # lst = db_taxa().db_get_clades()
+        # for clade in lst:
+        #     self.window.combo_group.addItem(clade)
+        # self.window.combo_group.setCurrentIndex(1)
 
         #Manage the taxonomy_api class, load api from API_taxonomy
-        self.taxonomy_api = API_Taxonomy()
+        #self.taxonomy_api = API_Taxonomy()
         api_class_toadd = {}
 
         #add WFO tab if rank is lower than family
-        if self.PNTaxa.id_rank <10:
-            self.window.tabWidget_main.addTab(QtWidgets.QWidget(), 'WFO')       
+        #if self.PNTaxa.id_rank <10:
         #add other API Tab only for API classes with a get_children function
-        for key, value in self.taxonomy_api.api_classes.items():
-            _children = value.get("children", None)
-            if _children and self.PNTaxa.id_rank >=_children:
-                api_class_toadd[key] = value     
-        for api_class in api_class_toadd.keys():
-            self.window.tabWidget_main.addTab(QtWidgets.QWidget(), api_class.title())
+        # for key, value in self.taxonomy_api.api_classes.items():
+        #     _children = value.get("children", None)
+        #     if _children and self.PNTaxa.id_rank >=_children:
+        #         api_class_toadd[key] = value     
+        # for api_class in api_class_toadd.keys():
+        #     self.window.tabWidget_main.addTab(QtWidgets.QWidget(), api_class.title())
 
         #manage slot and signals
         button_apply.clicked.connect(self._on_button_apply_clicked)
         button_close.clicked.connect (self._on_button_close_clicked)
+        button_apply.setAutoDefault(False)
+        button_close.setAutoDefault(False)
         self.window.tabWidget_main.currentChanged.connect(self._on_tabWidget_click)
-        self.window.combo_group.activated.connect(self._on_combo_group_clicked)
-        self.window.checkBox_filter_new.toggled.connect(self._on_checkbox_filter_toggled)
+        #self.window.combo_group.activated.connect(self._on_combo_group_clicked)
+        #self.window.checkBox_filter_new.toggled.connect(self._on_checkbox_filter_toggled)
         self.window.basenameLineEdit.textChanged.connect (self._validate)
         self.window.authorsLineEdit.textChanged.connect (self._validate)
         self.window.rankComboBox.activated.connect(self._validate)
@@ -702,6 +713,8 @@ class PNTaxa_add(QtWidgets.QMainWindow):
 ##internal functions
     def _validate(self):
         """Evaluate the new name and authors combination, then enable/disable the Apply button"""
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
+        _idrankgenus = database.dbtaxa().db_get_rank ("genus", "id_rank")
         self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(False)
         self.window.taxaLineEdit_result.setText('')
 
@@ -718,27 +731,42 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         id_rank = self.window.rankComboBox.itemData(self.window.rankComboBox.currentIndex())
         ined = None
         taxa = None
-        prefix = None
+        prefix = " - "
         if not newauthors or not published:
             ined = '(ined.)'
 
         #add prefix if species or infraspecies
-        if id_rank >=21:
+        if id_rank >=_idrankspecies:
             newbasename = newbasename.lower()
             prefix = db_taxa().db_get_rank(id_rank, 'prefix') or ''
         #set the taxa name
         taxa = " ".join(str(part) for part in [parentname, prefix, newbasename, newauthors, ined] if part)
-        self.window.taxaLineEdit_result.setText(taxa)
+        self.window.label_2.setText(taxa)
         #set the apply status
-        _apply = id_rank < 14 or len(newbasename) >= 3
+        _apply = id_rank < _idrankgenus or len(newbasename) >= 3
         self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(_apply)
   
+
+
+
+
     def _has_checked_item(self):
-        """Returns True if a least one item is checked"""
-        for taxa in self.table_taxa:
-            if taxa["item"].checkState() == 2:
-                return True
-        return False
+        """Returns True if at least one item is checked"""
+
+        def check_item(item):
+            for row in range(item.rowCount()):
+                child = item.child(row, 0)
+
+                if child.checkState() == Qt.Checked:
+                    return True
+
+                if check_item(child):
+                    return True
+
+            return False
+
+        root = self.proxy.sourceModel().invisibleRootItem()
+        return check_item(root)
 
     def _unchecked_child(self, item):
         """Unchecked item and childrens, with a recursive function"""
@@ -755,7 +783,8 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         try:
             item_parent = item.parent()
             if item_parent.isCheckable():
-                item_parent.setCheckState(2)
+                if item_parent.isEnabled():
+                    item_parent.setCheckState(2)
                 self._checked_parent(item_parent)
         except Exception:
             return
@@ -768,80 +797,228 @@ class PNTaxa_add(QtWidgets.QMainWindow):
                 child.setCheckState(2)
                 self._checked_children(child)
 
-    def _checked_taxa(self, id=0):
-        """Return a list of taxa checked into table_taxa with a recursive function"""
-        if id == 0:
-            id = self.table_taxa[0]["id"]
-        tab_result=[]
-        for taxa in self.table_taxa:
-            if taxa["id_parent"] == id and taxa.get("item", None):
-                item = taxa["item"]
-                if item.checkState()==2:
-                    #taxa["parent"] = taxaname
-                    tab_result.append(taxa)
-                tab_result += self._checked_taxa(taxa["id"])
-        return tab_result
+    def _checked_taxa(self, item=None):
+        """
+        Return a list of items checked into the model
+        """
 
-    def _draw_table_taxa(self):
-        """Draw the hierarchical tree according to idparent and id in the list of taxa-dictionaries (self.table_taxa)"""
-        if self.window.tabWidget_main.currentIndex() == 0:
-            return
-        #model = self.window.trView_childs.model()
+        if item is None:
+            item = self.proxy.sourceModel().invisibleRootItem()
+
+        result = []
+        for row in range(item.rowCount()):
+            child = item.child(row, 0)
+            if child.checkState() == Qt.Checked:
+                result.append(child)
+            result.extend(self._checked_taxa(child))
+
+        return result
+
+
+    def _append_taxon(self, taxon, parent_item=None):
+    #Add taxon to the hierarchical treeviewchids
+        taxaref = f'{taxon["taxaname"]} {taxon.get("authors", "")}'
+        item = QtGui.QStandardItem(str(taxon["rank"]))
+        item1 = QtGui.QStandardItem(taxaref.strip())
+
+        #set checkable i fnot alreading existing iin the database (id_taxonref = 0)
+        _checkable = (taxon.get ("id_taxonref",-1) == 0)
+        item.setCheckable(_checkable)
+        
+        #add ref to item in taxon and userrole
+        taxon["item"] = item
+        item.setData(taxon, Qt.UserRole)
+
+        #increment checkable count
+        if not _checkable:
+            item.setCheckState(QtCore.Qt.PartiallyChecked)
+            item.setEnabled(False)
+            item.setToolTip("Taxon already exists in database")
+
+        # add item to model or parent link
+        if parent_item is None:
+            #execute a thread to get the parents of the root taxon from WFO
+            wfo_id = taxon.get("id", None)
+            self.wfo_parents_future = self.executor.submit(wfo_graphsql.get_wfo_parents,wfo_id)
+            #add the root node to the model (proxy source model)
+            self.proxy.sourceModel().appendRow([item, item1])
+        else:
+            parent_item.appendRow([item, item1])
+
+    def _add_taxa(self, parent_taxon):
+    #add taxa and children to the hierarchical treeviewchids
+        #get parents in a separate thread to avoid blocking the GUI
+
+        # get the parent idtaxonref
+        if parent_taxon.get("id_taxonref", None) is None:
+            self._set_idtaxonref([parent_taxon])
+        id_parent = parent_taxon.get("id_taxonref", 0)
+
+        #search for existing node of parent_item in the model, create it if not exists
+        try:
+            parent_item = parent_taxon["item"]
+            parent_item.index()
+        except Exception:
+            self._append_taxon(parent_taxon, None)
+            parent_item = parent_taxon["item"]
+            
+        #get children from wfo
+        concept_id = parent_taxon["id"]
+        children = wfo_graphsql.get_wfo_children(concept_id).get("match", [])
+
+        #add children to the model
+        if children:
+            if id_parent > 0: #check for existing children only if parent already existe
+                self._set_idtaxonref(children)
+
+            #create children items
+            for child in children:
+                self._append_taxon(child, parent_item)
+        _result = "Select taxa to add (Ctrl-click includes child taxa). Double-click to browse"
+        self.window.label_2.setText(_result)
+        #set the view
+        proxy_index = self.proxy.mapFromSource(parent_item.index())
+        self.window.trView_childs.expand(proxy_index)
+        self.window.trView_childs.resizeColumnToContents(0)
+        self.window.trView_childs.resizeColumnToContents(1)
+        self.window.trView_childs.scrollTo(proxy_index, QtWidgets.QAbstractItemView.PositionAtTop)
+        # while QtWidgets.QApplication.overrideCursor() is not None:
+        #     QtWidgets.QApplication.restoreOverrideCursor()
+
+    def _set_idtaxonref(self, _list_taxa):
+        #set the flag id_taxonref for any taxa of _list_taxa from database (0 if not found)
+        names = [d["taxaname"].strip() for d in _list_taxa]     
+        dict_id_taxonref = db_taxa().db_get_searchnames(names)
+        for _taxa in _list_taxa:
+            _taxa["id_taxonref"] = dict_id_taxonref.get(_taxa["taxaname"], 0)
+
+    def _do_search(self):
+        search_taxon = self.window.search_lineEdit.text().strip()
+        self.window.label_2.setProperty("text", f"Searching taxon {search_taxon}...")
+        self.window.label_2.setText(self.window.label_2.property("text"))
         model = self.proxy.sourceModel()
         model.setRowCount(0)
-        self.checkable = 0
-        #disconnect the itemChanged signal
-        self._connect_signal_trview_childs(False)
+        #self.checkable = 0
+        item_status = QtGui.QStandardItem("Searching in progress...")
+        model.appendRow([
+            QtGui.QStandardItem("WFO"),
+            item_status
+        ])
+        self.window.trView_childs.repaint()
+        self.window.label_2.repaint()
+        self._connect_signal_trview_childs(connect = False)
+        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.WaitCursor))
+
+        try:    
+            newTaxa = wfo_graphsql.wfo_get_fuzzy_names(search_taxon)["match"]
+            if newTaxa:
+                item_status.setText("Loading children...")
+                self.window.trView_childs.repaint()
+                model.setRowCount(0)
+                for newTaxon in newTaxa:
+                    if len(newTaxa) == 1 : #and newTaxon["accepted"]:
+                        #add nodes in treeview
+                        # wfo_id = newTaxon.get("id", None)
+                        # self.wfo_parents_future = self.executor.submit(test.get_wfo_parents,wfo_id)
+                        self._add_taxa(newTaxon)
+                    else:
+                        item = QtGui.QStandardItem(newTaxon["fuzzyname"])
+                        item1= QtGui.QStandardItem()
+                        if not newTaxon["accepted"]:
+                            item1 = QtGui.QStandardItem(chr(8801) +' ' +newTaxon["taxaname"])
+                        newTaxon["item"] = item
+                        item.setData(newTaxon, Qt.UserRole)
+                        model.appendRow([item, item1])
+                        self.window.trView_childs.expandAll()
+                        self.window.trView_childs.resizeColumnToContents(0)
+                        self.window.trView_childs.resizeColumnToContents(1)
+                if len(newTaxa) > 1:
+                    _result = f" {len(newTaxa)} matching taxa for '{search_taxon}'. Double-click a taxon to browse its children"
+                    self.window.label_2.setText(_result)
+                self._connect_signal_trview_childs(connect = True)
+            else:
+                item_status.setText("No result")
+        finally:
+        #while QtWidgets.QApplication.overrideCursor() is not None:
+            QtWidgets.QApplication.restoreOverrideCursor()
+
+
+
+    # def _draw_table_taxa(self):
+    #     """Draw the hierarchical tree according to idparent and id in the list of taxa-dictionaries (self.table_taxa)"""
+    #     if self.window.tabWidget_main.currentIndex() == 0:
+    #         return
+    #     #model = self.window.trView_childs.model()
+    #     model = self.proxy.sourceModel()
+    #     model.setRowCount(0)
+    #     self.checkable = 0
+    #     #disconnect the itemChanged signal
+    #     self._connect_signal_trview_childs(False)
         
-        def draw_list_recursive(taxon, parent_item=None):
-            #internal recursive function to build hierarchical tree according to idparent and id
-            taxaref = f'{taxon["taxaname"]} {taxon.get("authors", "")}'.strip()
-            _checkable = (taxon["id_taxonref"] == 0 and not taxon.get ("autonym", False))
-            item = QtGui.QStandardItem(str(taxon["rank"]))
-            item1 = QtGui.QStandardItem(taxaref.strip())       
-            item.setCheckable(False)
-            item.setData(None, Qt.CheckStateRole)
-            item.setCheckable(_checkable)
-            taxon["item"] = item
-            if _checkable:
-                self.checkable += 1
-            #add node to the model
-            if parent_item is None:
-                model.appendRow([item, item1])
-            else:
-                parent_item.appendRow([item, item1])
-            for child in taxon["children"]:
-                draw_list_recursive(child, item)
+    #     def draw_list_recursive(taxon, parent_item=None):
+    #         #internal recursive function to build hierarchical tree according to idparent and id
+    #         taxaref = f'{taxon["taxaname"]} {taxon.get("authors", "")}'.strip()
+    #         _checkable = (taxon["id_taxonref"] == 0 and not taxon.get ("autonym", False))
+    #         item = QtGui.QStandardItem(str(taxon["rank"]))
+    #         item1 = QtGui.QStandardItem(taxaref.strip())       
+    #         item.setCheckable(False)
+    #         item.setData(None, Qt.CheckStateRole)
+    #         item.setData(taxon, Qt.UserRole)
+    #         item.setCheckable(_checkable)
+    #         #taxon["item"] = item
+    #         if _checkable:
+    #             self.checkable += 1
+    #         #add node to the model
+    #         if parent_item is None:
+    #             model.appendRow([item, item1])
+    #         else:
+    #             parent_item.appendRow([item, item1])
+    #         for child in taxon["children"]:
+    #             draw_list_recursive(child, item)
 
-        #browse the table_taxa to build a tree structure
-         #first create a dictionary of parent
-        dict_parent = {item["id"]: item for item in self.table_taxa}
-        roots = []
-        for taxa in self.table_taxa:
-            taxa["children"]= []
-            node_parent = dict_parent.get(taxa["id_parent"], None)
-            if node_parent is None:
-                roots.append(taxa)
-            else:
-                node_parent["children"].append(taxa)
-        #add each root node to the model by recursive function
-        for root in roots:
-            draw_list_recursive(root)
+    #     #browse the table_taxa to build a tree structure
+    #      #first create a dictionary of parent
+    #     dict_parent = {item["id"]: item for item in self.table_taxa}
+    #     roots = []
+    #     for taxa in self.table_taxa:
+    #         taxa["children"]= []
+    #         node_parent = dict_parent.get(taxa["id_parent"], None)
+    #         if node_parent is None:
+    #             roots.append(taxa)
+    #         else:
+    #             node_parent["children"].append(taxa)
+    #     #add each root node to the model by recursive function
+    #     for root in roots:
+    #         draw_list_recursive(root)
 
-        self.window.trView_childs.expandAll()
-        #self.window.trView_childs.expandToDepth(1)
+    #     self.window.trView_childs.expandAll()
+        
+
+    #     self.window.trView_childs.sortByColumn(1, Qt.AscendingOrder)
+    #     #set an item msg if not found
+    #     if model.rowCount() ==0:
+    #         # msg = msg or f"{self.PNTaxa.taxaname} is not found"
+    #         # model.appendRow([QtGui.QStandardItem("< No data > "), QtGui.QStandardItem(msg)],)
+    #         self.proxy.setOnlyCheckable(False)
+    #     #ajust columns
+
+    #     self.window.trView_childs.resizeColumnToContents(0)
+    #     self.window.trView_childs.resizeColumnToContents(1)
+    #     #self.window.trView_childs.expandToDepth(1)
+    #     while QtWidgets.QApplication.overrideCursor() is not None:
+    #         QtWidgets.QApplication.restoreOverrideCursor()
             
-        #add message to the label
-        index = self.window.tabWidget_main.currentIndex()
-        _api_name = self.window.tabWidget_main.tabText(index).title()
-        self.window.checkBox_filter_new.setVisible(False)
-        if self.checkable > 0:
-            self.window.checkBox_filter_new.setVisible(True)
-            self.window.label_2.setText("Check taxa to add (Ctrl to add children)")
-        else:
-            self.window.label_2.setText("No new taxa to add from " + _api_name)
-        #reconnect the itemChanged signal
-        self._connect_signal_trview_childs(True)
+    #     #add message to the label
+    #     index = self.window.tabWidget_main.currentIndex()
+    #     _api_name = self.window.tabWidget_main.tabText(index).title()
+    #     #self.window.checkBox_filter_new.setVisible(False)
+    #     if self.checkable > 0:
+    #         #self.window.checkBox_filter_new.setVisible(True)
+    #         self.window.label_2.setText("Check taxa to add (Ctrl to add children)")
+    #     else:
+    #         self.window.label_2.setText("No new taxa to add from " + _api_name)
+    #     #reconnect the itemChanged signal
+    #     self._connect_signal_trview_childs(True)
 
     def _connect_signal_trview_childs(self, connect = False):
         """Connect/Disconnect the checked signal event itemChanged to trview_childs"""
@@ -854,6 +1031,7 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         #connect if true
         if connect:
             model.itemChanged.connect(self._on_trview_checked_click)
+            self.window.trView_childs.doubleClicked.connect(self._on_trview_childs_dbleclicked)
 
     def _on_trview_checked_click(self, checked_item):
         """Checked/Unchecked item with parent, and childs according to keyboard"""
@@ -876,16 +1054,48 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(_apply)
         self._connect_signal_trview_childs(connect = True)
 
-    def _on_combo_group_clicked (self):
-        """Refresh the current category"""
-        index = self.window.tabWidget_main.currentIndex()
-        self._on_tabWidget_click(index)
+
+    def _on_trview_childs_dbleclicked(self, index):
+        if not  index.isValid():
+            return
+        # get the index of the item into the treeview model
+        model = self.proxy.sourceModel()
+        item_dbleclicked = model.itemFromIndex(
+            self.proxy.mapToSource(index).siblingAtColumn(0)
+            )
+        if item_dbleclicked.rowCount()>0:
+            return
+        parent = item_dbleclicked.data(Qt.UserRole)
+        if parent:
+            QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.WaitCursor))
+            if parent.get("fuzzyname", None):
+                model.setRowCount(0)
+                # wfo_id = parent.get("id", None)
+                # self.wfo_parents_future = self.executor.submit(test.get_wfo_parents,wfo_id)
+
+                self.window.search_lineEdit.setText(parent["taxaname"])
+            self._add_taxa(parent)
+                
+        #while QtWidgets.QApplication.overrideCursor() is not None:
+        QtWidgets.QApplication.restoreOverrideCursor()
+
+
+
+    
+
+    # def _on_combo_group_clicked (self):
+    #     """Refresh the current category"""
+    #     index = self.window.tabWidget_main.currentIndex()
+    #     self._on_tabWidget_click(index)
         
-    def _on_checkbox_filter_toggled (self, value):
-        self.proxy.setOnlyCheckable(value)
-        self.window.trView_childs.expandAll()
-        self.window.trView_childs.resizeColumnToContents(0)
-        self.window.trView_childs.resizeColumnToContents(1)
+    # def _on_checkbox_filter_toggled (self, value):
+    #     self.proxy.setOnlyCheckable(value)
+    #     self.window.trView_childs.expandAll()
+    #     self.window.trView_childs.resizeColumnToContents(0)
+    #     self.window.trView_childs.resizeColumnToContents(1)
+
+    
+
 
     def _on_tabWidget_click(self, index = None):
         """Click on a tabWidget_main item"""
@@ -893,34 +1103,44 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             index = self.window.tabWidget_main.currentIndex()
     #change tabWidget_main item (user search or internet search)
         self.window.trView_childs.setVisible(False)
-        self.window.combo_group.setVisible(False)
-        self.window.checkBox_filter_new.setVisible(False)
+        self.window.search_lineEdit.setVisible(False)
+        self.window.checkBox_add_synonyms.setVisible(False)
+        # self.window.combo_group.setVisible(False)
+        # self.window.checkBox_filter_new.setVisible(False)
+
     #index = 0 --> USER
         if index == 0 : 
             self.window.label_2.setText("Add taxon")
-            self.window.taxaLineEdit_result.setVisible(True)
+            #self.window.taxaLineEdit_result.setVisible(True)
             self._validate()
             return
     #else --> WFO or API
         _apibase = self.window.tabWidget_main.tabText(index)
-        self.window.taxaLineEdit_result.setVisible(False)
+       #self.window.taxaLineEdit_result.setVisible(False)
         self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(False)
-        QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.WaitCursor))
+        #QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.WaitCursor))
         #get data (list of dictionary) from API class function get_children"
         # a list of childs elements
         #exemple {"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}
         # note that the id_parent of each taxa except the first one must be in the list, if not it will excluded
         #self.window.frame_filter.setVisible(True)
-        self.window.combo_group.setVisible (False)
+        #self.window.combo_group.setVisible (False)
+        
+
+        
+
     #add the widgets to the layout
         layout = self.window.tabWidget_main.currentWidget().layout()
         if layout is None:
-            layout = QtWidgets.QGridLayout()
+            layout = QtWidgets.QVBoxLayout()
             self.window.tabWidget_main.currentWidget().setLayout(layout)
         #add the widget to the layout
-        layout.addWidget(self.window.combo_group)
+        layout.addWidget(self.window.search_lineEdit)
         layout.addWidget(self.window.trView_childs)
+        layout.addWidget(self.window.checkBox_add_synonyms)
         self.window.trView_childs.setVisible(True)
+        self.window.search_lineEdit.setVisible(True)
+        self.window.checkBox_add_synonyms.setVisible(True)
 
     #draw the list in the tree view
         self.window.label_2.setText("Searching into " + _apibase + "...")
@@ -928,68 +1148,215 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         model.setRowCount(0)
         model.setColumnCount(2)
         QtWidgets.QApplication.processEvents()
-        msg = "Null Value"
+        #msg = "Null Value"
         _apibase = _apibase.upper()
         self.table_taxa = []        
         if _apibase == "WFO": #add taxa from the internal datalist (WFO)
-            self.window.combo_group.setVisible(True)
+            self.window.search_lineEdit.setText(self.PNTaxa.taxaname)
+            self._do_search()
+            return
+
+            
+            # newTaxa = test.wfo_get_fuzzy_names(self.window.search_lineEdit.text())["match"]
+            # for newTaxon in newTaxa:
+            #     if len(newTaxa) ==1 and newTaxon["accepted"]:
+            #         item_parent = QtGui.QStandardItem(newTaxon["rank"])
+            #         item_parent1 = QtGui.QStandardItem(newTaxon["taxaname"])
+            #         self.proxy.sourceModel().appendRow([item_parent, item_parent1])
+            #         concept_id = newTaxon["id"]
+            #         _childs = test.get_wfo_children(concept_id)["match"]
+            #         if not _childs:
+            #             return []
+            #         for _child in _childs:
+            #             item = QtGui.QStandardItem(_child["rank"])
+            #             item1 = QtGui.QStandardItem(_child["taxaname"])
+            #             _child["item"] = item
+            #             item.setData(_child, Qt.UserRole)
+            #             item_parent.appendRow([item, item1])
+            #         self.window.trView_childs.expandAll()
+
+
+            #     else:
+            #         item = QtGui.QStandardItem(newTaxon["name"])
+            #         item1= QtGui.QStandardItem()
+            #         if not newTaxon["accepted"]:
+            #             item1 = QtGui.QStandardItem(chr(8801) +' ' +newTaxon["taxaname"])
+            #         newTaxon["item"] = item
+            #         #item.setCheckable(True)
+            #         item.setData(newTaxon, Qt.UserRole)
+            #         self.proxy.sourceModel().appendRow([item, item1])
+
+
+            #     # newTaxon["rank"] = newTaxon["name"]
+            #     # self._append_taxon(newTaxon)
+            # #self.window.trView_childs.resizeColumnToContents(0)
+            # self._connect_signal_trview_childs(connect = True)
+            # self.window.trView_childs.resizeColumnToContents(0)
+            
+
+
+
+            newTaxon = wfo_graphsql.get_wfo_taxon("Miconia")["match"]
+            if newTaxon:
+                concept_id = newTaxon["id"]
+                _lsparents = wfo_graphsql.get_wfo_parents (concept_id)
+                if _lsparents:
+                    _lsparents = _lsparents["match"]
+                    _parent = _lsparents[0]
+                    _childs = _lsparents[1:]
+                    _parent["id_taxonref"] = 1
+
+                    self._fill_list_taxa ([_parent])
+                    self._append_taxon(_parent)
+                    self._fill_list_taxa (_childs, _parent)
+
+                    for _child in _childs:
+                        self._add_taxa(_parent, [_child])
+                        _parent = _child
+            return
+
+            parent = wfo_graphsql.get_wfo_taxon(self.PNTaxa.taxaname)["match"]
+            if not parent:
+                parent = {"id_taxonref" :"0", "taxaname": self.PNTaxa.taxaname, "authors": self.PNTaxa.authors, "rank": "Not found:", "autonym": True }
+                self._append_taxon(parent)
+                self.window.trView_childs.resizeColumnToContents(0)
+                self.window.trView_childs.resizeColumnToContents(1)
+                while QtWidgets.QApplication.overrideCursor() is not None:
+                    QtWidgets.QApplication.restoreOverrideCursor()
+                # label = QtWidgets.QLabel("Taxon not found", self.window.trView_childs)
+                # label.setAlignment(QtCore.Qt.AlignCenter)
+                # label.show()
+                return []
+            parent["id_taxonref"] = self.PNTaxa.idtaxonref
+            parent["parentname"] = ''
+            concept_id = parent["id"]
+
+            self._fill_list_taxa ([parent])
+            self._append_taxon(parent)
+
+            
+
+
+            self.table_taxa = [parent]
+            _childs = wfo_graphsql.get_wfo_children(concept_id)["match"]
+            if not _childs:
+                return []
+            self._fill_list_taxa (_childs, parent)
+            self._add_taxa(parent, _childs)
+            self._connect_signal_trview_childs(connect = True)
+
+            return
+            # if parent.get("id_taxonref", 0) > 0:
+            #     names = [d["taxaname"].strip() for d in _childs]     
+            #     dict_id_taxonref = db_taxa().db_get_searchnames(names)
+            #     for _child in _childs:
+            #         _child["id_taxonref"] = dict_id_taxonref.get(_child["taxaname"], 0)
+            # for _child in _childs:
+            #     _child["parentname"] = parent["taxaname"]
+            self.table_taxa += _childs
+
+            #self._fill_list_taxa (_childs)
+
+            #self.window.combo_group.setVisible(True)
             #_filter the taxasearch with a keyword (None or from combo_clade)
-            _filter = None
-            if self.window.combo_group.currentIndex() > 0:
-                _filter = self.window.combo_group.currentText()
-            #get the list of dictionaries (cf. db_get_taxa_wfo)
-            self.table_taxa = db_taxa().db_get_taxa_wfo (_filter)
-        else: #use self.taxonomy_api            
-            _name = self.PNTaxa.taxaname #simple_taxaname
-            _rank = self.PNTaxa.rank_name
-            #set the key (if tropicos)
-            _key = None
-            if _apibase == "TROPICOS":
-                _key = APIkey_tropicos
-            #get the class and errors
-            result = self.taxonomy_api.get_APIclass(_apibase, _name, _rank, _key)
-            msg = self.taxonomy_api._api_class.API_error
-            #get children
-            if result:
-                #result.getchildren is a list of dictionary ex: [{"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}] 
-                self.table_taxa = result.get_children()
-            if self.table_taxa:
-                #add mandatories fields for display and save
-                #search for existing taxaname in the dbase (return a dictionary id_taxonref by taxaname for existing taxaname)
-                names = [d["taxaname"].strip() for d in self.table_taxa]     
-                dict_id_taxonref = db_taxa().db_get_searchnames(names)
-                #add an index dictionary to search for taxaname from id_taxonref
-                dict_parent = {item["id"]: item["taxaname"] for item in self.table_taxa}
-                #ajust the dictionary, add special fields
-                for taxa in self.table_taxa:                
-                    _tabtaxa = taxa["taxaname"].split()
-                    taxa["id_taxonref"] = dict_id_taxonref.get(taxa["taxaname"], 0)
-                    taxa["parentname"] = dict_parent.get(taxa["id_parent"], "")
-                    taxa["basename"] = _tabtaxa[-1]
-                    taxa["authors"] = "" if taxa.get("authors") is None else taxa["authors"] #functions.get_str_value(taxa["authors"])
-                    taxa["id_rank"] = db_taxa().db_get_rank(taxa["rank"], "id_rank")
-                    taxa["published"] = len (taxa["authors"]) > 0
-                    taxa["accepted"] = True
-                    taxa["autonym"] = False
-                    if taxa["id_rank"] > 21 and len(_tabtaxa) >= 4:
-                        taxa["autonym"] = (_tabtaxa[1] == taxa["basename"])
+            # _filter = None
+            # if self.window.combo_group.currentIndex() > 0:
+            #     _filter = self.window.combo_group.currentText()
+            # #get the list of dictionaries (cf. db_get_taxa_wfo)
+            # self.table_taxa = db_taxa().db_get_taxa_wfo (_filter)
+        # else: #use self.taxonomy_api            
+        #     _name = self.PNTaxa.taxaname #simple_taxaname
+        #     _rank = self.PNTaxa.rank_name
+        #     #set the key (if tropicos)
+        #     _key = None
+        #     if _apibase == "TROPICOS":
+        #         _key = APIkey_tropicos
+        #     #get the class and errors
+        #     result = self.taxonomy_api.get_APIclass(_apibase, _name, _rank, _key)
+        #     msg = self.taxonomy_api._api_class.API_error
+        #     #get children
+        #     # if result:
+        #     #     #result.getchildren is a list of dictionary ex: [{"id" : '10', "taxaname" : 'Genus species', "authors" : 'Not me', "rank" : 'Species', "idparent" : '1'}] 
+        #     #     self.table_taxa = result.get_children()
+        #     self.table_taxa = self.taxonomy_api.get_children()
+        # # if self.table_taxa:
+        # #     #add mandatories fields for display and save
+        # #     #search for existing taxaname in the dbase (return a dictionary id_taxonref by taxaname for existing taxaname)
+        # #     names = [d["taxaname"].strip() for d in self.table_taxa]     
+        # #     dict_id_taxonref = db_taxa().db_get_searchnames(names)
+        # #     #add an index dictionary to search for taxaname from id_taxonref
+        # #     dict_parent = {item["id"]: item["taxaname"] for item in self.table_taxa}
+        # #     #ajust the dictionary, add special fields
+        # #     for taxa in self.table_taxa:                
+        # #         _tabtaxa = taxa["taxaname"].split()
+        # #         taxa["id_taxonref"] = dict_id_taxonref.get(taxa["taxaname"], 0)
+        # #         taxa["parentname"] = dict_parent.get(taxa["id_parent"], "")
+        # #         taxa["basename"] = _tabtaxa[-1]
+        # #         taxa["authors"] = "" if taxa.get("authors") is None else taxa["authors"] #functions.get_str_value(taxa["authors"])
+        # #         taxa["id_rank"] = db_taxa().db_get_rank(taxa["rank"], "id_rank")
+        # #         taxa["published"] = len (taxa["authors"]) > 0
+        # #         taxa["accepted"] = True
+        # #         taxa["autonym"] = False
+        # #         if taxa["id_rank"] > 21 and len(_tabtaxa) >= 4:
+        # #             taxa["autonym"] = (_tabtaxa[1] == taxa["basename"])
 
-        #check existing taxa and draw the treeview model
-        if self.table_taxa:
-            self._draw_table_taxa ()
-            self.window.trView_childs.sortByColumn(1, Qt.AscendingOrder)
-        #set an item msg if not found
-        if model.rowCount() ==0:
-            msg = msg or f"{self.PNTaxa.taxaname} is not found"
-            model.appendRow([QtGui.QStandardItem("< No data > "), QtGui.QStandardItem(msg)],)
-            self.proxy.setOnlyCheckable(False)
-        #ajust columns
+        # #check existing taxa and draw the treeview model
+        # if self.table_taxa:
+        #     #self._fill_list_taxa(self.table_taxa)
+        #     self._draw_table_taxa ()
+        # #     self.window.trView_childs.sortByColumn(1, Qt.AscendingOrder)
+        # # #set an item msg if not found
+        # # if model.rowCount() ==0:
+        # #     msg = msg or f"{self.PNTaxa.taxaname} is not found"
+        # #     model.appendRow([QtGui.QStandardItem("< No data > "), QtGui.QStandardItem(msg)],)
+        # #     self.proxy.setOnlyCheckable(False)
+        # # #ajust columns
 
-        self.window.trView_childs.resizeColumnToContents(0)
-        self.window.trView_childs.resizeColumnToContents(1)
-        #self.window.trView_childs.expandToDepth(1)
-        while QtWidgets.QApplication.overrideCursor() is not None:
-            QtWidgets.QApplication.restoreOverrideCursor()
+        # # self.window.trView_childs.resizeColumnToContents(0)
+        # # self.window.trView_childs.resizeColumnToContents(1)
+        # # #self.window.trView_childs.expandToDepth(1)
+        # # while QtWidgets.QApplication.overrideCursor() is not None:
+        # #     QtWidgets.QApplication.restoreOverrideCursor()
+
+
+
+    # def _fill_list_taxa(self, _list_taxa, _parent_taxa=None):
+    #     #     #add mandatories fields for display and save
+    #     #     
+    #     if not _list_taxa:
+    #         return
+    #     if _parent_taxa:
+    #         #if _parent_taxa.get("id_taxonref", 0) > 0:
+    #         # _parent_taxa["item"].setCheckState(Qt.Checked)
+    #         # _parent_taxa["item"].setEnabled(False)
+
+    #         names = [d["taxaname"].strip() for d in _list_taxa]     
+    #         dict_id_taxonref = db_taxa().db_get_searchnames(names)
+    #         for _child in _list_taxa:
+    #             _child["id_taxonref"] = dict_id_taxonref.get(_child["taxaname"], 0)
+    #         #for _child in _list_taxa:
+    #             #_child["parentname"] = _parent_taxa["taxaname"]
+    #     return
+    #     #ajust the dictionary, add special fields
+    #     _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
+    #     for taxa in _list_taxa: 
+    #         #print (taxa["rank"])
+    #         _tabtaxa = taxa["taxaname"].split()
+    #         #taxa["id_taxonref"] = dict_id_taxonref.get(taxa["taxaname"], 0)
+    #         # taxa["parentname"] = dict_parent.get(taxa["id_parent"], "")
+    #         taxa["basename"] = _tabtaxa[-1]
+    #         taxa["authors"] = "" if taxa.get("authors") is None else taxa["authors"] #functions.get_str_value(taxa["authors"])
+    #         taxa["id_rank"] = db_taxa().db_get_rank(taxa["rank"], "id_rank")
+    #         taxa["published"] = len (taxa["authors"]) > 0
+    #         taxa["accepted"] = True
+    #         taxa["autonym"] = False
+    #         if taxa["id_rank"] > _idrankspecies and len(_tabtaxa) >= 4:
+    #             taxa["autonym"] = (_tabtaxa[1] == taxa["basename"])
+
+
+
+
+
 
     def _on_button_apply_clicked(self):
         """Valid the form and emit signal (apply_signal) with a taxa-dictionary (dict_tosave)."""
@@ -1013,33 +1380,79 @@ class PNTaxa_add(QtWidgets.QMainWindow):
             return
 
     #for API tabs
-        #get the dict_tosave for each checked taxa to add
-        taxa_toAdd = self._checked_taxa()
+    #get the dict_tosave for each checked taxa to add
+        #get the selected (checked) items
+        self.taxa_toAdd = []
+        checked_items = self._checked_taxa()
+        if not checked_items:
+            return
+        
+            # wfo_id = taxon.get("id", None)
+            # self.wfo_parents_future = self.executor.submit(test.get_wfo_parents,wfo_id)
+
+        #get the entire hierarchy of selected taxa and identifiy root item
+        taxa_toAdd = []
+        root_item = self.proxy.sourceModel().item(0,0)
+        root_taxon = None
+
+        for item in checked_items:
+            current = item
+            while current is not None:
+                taxon = current.data(Qt.UserRole)
+                if taxon not in taxa_toAdd:
+                    taxa_toAdd.append(taxon)
+                    if current is root_item:
+                        root_taxon = taxon
+                current = current.parent()
+
+        if self.window.checkBox_add_synonyms.isChecked():
+            for taxon in taxa_toAdd:
+                if taxon["item"] in checked_items:
+                    taxon["add_synonym"] = True
+
+        #root = self.proxy.sourceModel().item(0,0).data(Qt.UserRole)
+        #get the parents of the root_taxon from WFO hierarchy (a separate thread)
+        _parents = self.wfo_parents_future.result()
+        if _parents["match"]:
+            #merging parents and children hierarchy around the root node
+            _lsparents = _parents["match"]
+            #set the id_parent to root_taxon from the parent list
+            root_taxon["id_parent"] = _lsparents[-1]["id_parent"]
+            #search and set the id_taxonref except for first (= Plantae = 1) and last parent (root)
+            self._set_idtaxonref(_lsparents[1:-1]) 
+            #merge the parents and children hierarchy
+            taxa_toAdd = _lsparents[:-1] + taxa_toAdd
+
+        #fill the taxa_toAdd with special fields required for saving in database
+        dict_parent = {item["id"]: item["taxaname"] for item in taxa_toAdd}
+        for taxon in taxa_toAdd:
+            _tabtaxa = taxon["taxaname"].split()
+            taxon["basename"] = _tabtaxa[-1]
+            taxon["id_rank"] = db_taxa().db_get_rank(taxon["rank"], "id_rank")
+            taxon["parentname"] = dict_parent.get(taxon["id_parent"], '')
+            taxon["published"] = True
+            taxon["accepted"] = True
+            
+        #sort the taxa_toAdd according to id_rank, to ensure integration in dadatabase
+        taxa_toAdd.sort(key=lambda d: d["id_rank"])
+
+        # delete the first item of the hierarchy (= Plantae)
+        taxa_toAdd = taxa_toAdd[1:]
         if taxa_toAdd is None:
             return
         if len(taxa_toAdd) == 0:
             return
+        
         #emit the signal to save the taxa
-        self.apply_signal.emit(taxa_toAdd)
+        self.taxa_toAdd = taxa_toAdd
+        self.apply_signal.emit(self.taxa_toAdd)
         return
 
     def _on_button_close_clicked(self):
         """Close the add window."""
         self.window.close()
 
-    def _validate(self):
-        """Evaluate the new name and authors combination, then enable/disable the Apply button"""
-        self.window.buttonBox.button(QtWidgets.QDialogButtonBox.Apply).setEnabled(False)
-        self.window.taxaLineEdit_result.setText('')
 
-        #check for a valid newbasename
-        newbasename = self.window.basenameLineEdit.text().strip().title()
-        newbasename = newbasename.replace(' ', '')
-        if len(newbasename) < 3:
-            return
-        
-        #get authors & published
-        newauthors = self.window.authorsLineEdit.text()
 
 ### external functions
     def refresh (self):
@@ -1048,7 +1461,18 @@ class PNTaxa_add(QtWidgets.QMainWindow):
         self.window.authorsLineEdit.setText('')
         self.window.checkBox_published.setChecked(False)
         self.window.checkBox_accepted.setChecked(False)
-        self._draw_table_taxa()
+
+        #checked_items = self._checked_taxa()
+        for taxon in self.taxa_toAdd:
+            item = taxon.get("item", None)
+            if item:
+                # item.setCheckState(QtCore.Qt.Unchecked)
+                # item.setEnabled(True)
+                if taxon.get("id_taxonref", 0) > 0:
+                    item.setEnabled(False)        
+                    item.setCheckState(QtCore.Qt.PartiallyChecked)
+                    item.setData(taxon, Qt.UserRole)
+        #self._draw_table_taxa()
 
     def show(self):
         """Show the add window."""
@@ -1160,13 +1584,14 @@ class PNTaxa_edit(QtWidgets.QMainWindow):
         newauthors = self.window.authorsLineEdit.text()
         published = (self.window.checkBox_published.isChecked())
         accepted = (self.window.checkBox_accepted.isChecked())
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
         #create the temporary taxonref
         if not newauthors or not published:
             ined = 'ined.'
         # elif not published:
         #     ined = 'ined.'
         try:
-            if self.PNTaxa.id_rank >=21:
+            if self.PNTaxa.id_rank >=_idrankspecies:
                 parentname = self.window.parent_comboBox.currentText()
                 prefix = db_taxa().db_get_rank(self.PNTaxa.id_rank, 'prefix')
                 newbasename = newbasename.lower()
@@ -1404,6 +1829,7 @@ class PNTaxa_treeModel(QtCore.QAbstractItemModel):
 
     def _setupModelData(self, item = None):
         """Create the model from the list of items (self.items), set the parent and the children"""
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
         if item:
             items = [item]
         else:
@@ -1423,8 +1849,8 @@ class PNTaxa_treeModel(QtCore.QAbstractItemModel):
 
         # third loop to create the children of the respective parent
         for item in items:
-            #only add childs where id_rank >=21
-            if getattr(item, 'id_rank', 0) < 21:
+            #only add childs where id_rank >=species
+            if getattr(item, 'id_rank', 0) < _idrankspecies:
                 continue
             idparent = getattr(item, 'id_parent', 0)
             if idparent in self.parent_nodes:
@@ -1606,6 +2032,7 @@ class PNTaxa_treeModel(QtCore.QAbstractItemModel):
             return None
         _published = getattr(item.itemData, 'published', False)
         _accepted = getattr(item.itemData, 'accepted', False)
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
         
         if role == Qt.UserRole:
             return item.itemData
@@ -1623,7 +2050,7 @@ class PNTaxa_treeModel(QtCore.QAbstractItemModel):
                         item.itemData.authors_score
                     ], shape='ellipse')
             elif role == Qt.TextAlignmentRole:
-                if hasattr(item.itemData, 'id_rank') and item.itemData.id_rank >= 21:
+                if hasattr(item.itemData, 'id_rank') and item.itemData.id_rank >= _idrankspecies:
                     return Qt.AlignRight | Qt.AlignVCenter
                 else:
                     return Qt.AlignLeft | Qt.AlignVCenter

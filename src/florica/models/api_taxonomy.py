@@ -79,6 +79,20 @@ class API_Taxonomy():
             return self._api_class
         return
 
+    def get_metadata(self):
+        if self._api_class:
+            return self._api_class.get_metadata()
+        return
+
+    def get_children(self):
+        if self._api_class:
+            return self._api_class.get_children()
+        return
+
+    def get_synonyms(self):
+        if self._api_class:
+            return self._api_class.get_synonyms()    
+        return    
 
 ##___class API_Abstract________________________
 class API_Abstract ():
@@ -98,6 +112,7 @@ class API_Abstract ():
         self.API_error (str): the last error from the API.
     """
 
+#internal functions and methods
     def __init__(self, myTaxonData):
         """
         Initialize the abstract API class with empty metadata and taxa lists.
@@ -108,18 +123,13 @@ class API_Abstract ():
         self.ls_children = []
         self.ls_synonyms = []
         self.API_error = None
-        self.API_result = None  #set in get_taxon_fromURL, it's the raw resulting json request from url
-        self.API_taxon = None    #set in get_taxon_from_API_Result, it's the validated API taxon dict, set from self.API_result
+        self.API_result = None  #set in _get_taxon_fromURL, it's the raw resulting json request from url
+        self.API_taxon = None    #set in _get_taxon_from_API_Result, it's the validated API taxon dict, set from self.API_result
 
-    def translate_rank(self, _rank):
+    def _translate_rank(self, _rank):
         """
-        Translate a taxonomic rank string or integer to a standard English rank name.
-        Args:
-        _rank (str): The input rank string (may include accents or abbreviations).
-        Returns:
-        str: Standardized rank name capitalized, or 'Unknown' if not found.
+        Translate a taxonomic rank string or integer to a standard English rank nameor 'Unknown' if not found.
         """
-        
         rank_translate = {
             'order' : ['ordre', 8],
             'family':['famille', 'fam', 10],
@@ -147,17 +157,18 @@ class API_Abstract ():
                 return key.capitalize()
         return 'Unknown'
    
-    def get_responseAPI (self, _url, _timeout=5, _json = True):
+    def _get_responseAPI (self, _url, _timeout=5, _json = True):
         """
-        Send a GET request to a URL and return JSON or text response.
+            Send a GET request from a URL and return JSON or text response.
+        """
 
-        Args:
-            _url (str): URL to request.
-            _timeout (int, optional): Request timeout in seconds. Default is 5.
-            _json (bool, optional): If True, parse response as JSON; else return text. Default True.
-        Returns:
-            dict or str: Parsed JSON response or raw text, or empty string on failure.
-        """
+        # Args:
+        #     _url (str): URL to request.
+        #     _timeout (int, optional): Request timeout in seconds. Default is 5.
+        #     _json (bool, optional): If True, parse response as JSON; else return text. Default True.
+        # Returns:
+        #     dict or str: Parsed JSON response or raw text, or empty string on failure.
+        # """
         try:
             headers = {
                 "User-Agent": "TaxaOcc/0.01 (+https://github.com/PhilippeBko/taxa_occ)"
@@ -170,18 +181,18 @@ class API_Abstract ():
             self.API_error = "Connection error - no response from API"
             return None
     
-    def get_taxon_fromURL(self, url, list_items, field_name, field_id, filters = None):
+    def _get_taxon_fromURL(self, url, list_items, field_name, field_id, filters = None):
         """
-        Get the response from a URL and set the self.API_result.
-        list_items = key(s) to search in _api_result (ex: ["results", "data"], search for dict ["results"]["data"])
-        Args:
-        -url (str): URL to request.
-        -list_items (list): List of key(s) to search in _api_result
-        -field_name (str): Field name to search in self.API_result
-        -field_id (str): Field id to search in self.API_result
-        -filters (dict, optional): Filters to apply when searching the self.API_result
+        Get the response from a URL and set the self.API_result with correct taxon.
         """
-        _api_result = self.get_responseAPI (url)
+        # list_items = key(s) to search in _api_result (ex: ["results", "data"], search for dict ["results"]["data"])
+        # Args:
+        # -url (str): URL to request.
+        # -list_items (list): List of key(s) to search in _api_result
+        # -field_name (str): Field name to search in self.API_result
+        # -field_id (str): Field id to search in self.API_result
+        # -filters (dict, optional): Filters to apply when searching the self.API_result
+        _api_result = self._get_responseAPI (url)
         self.ls_metadata["url"] = url
         if _api_result is None:
             return
@@ -194,22 +205,21 @@ class API_Abstract ():
         except Exception:
             self.API_result = None
         #load the self.API_taxon
-        self.get_taxon_from_API_Result(field_name, field_id, filters)
+        self._get_taxon_from_API_Result(field_name, field_id, filters)
 
-    def get_taxon_from_API_Result(self, field_name, field_id, filters = None):
+    def _get_taxon_from_API_Result(self, field_name, field_id, filters = None):
         """
-        Set the self.API_Taxon
-        Find and set the taxon data matching `self.taxaname` from self.API_result.
+        Find and set the taxon (self.API_Taxon) data matching `self.taxaname` from self.API_result.
+        """
 
-        Args:
-            field_name (str): Key name for taxon name field.
-            field_id (str): Key name for taxon ID field.
-            filters (dict, optional): Additional dictionnary filters to apply to the taxa dicts.
+        # Args:
+        #     field_name (str): Key name for taxon name field.
+        #     field_id (str): Key name for taxon ID field.
+        #     filters (dict, optional): Additional dictionnary filters to apply to the taxa dicts.
             
-        Side Effects:
-            Sets `self.API_taxon` to the matching taxon dict.
-            Updates `self.ls_metadata["name"]` and `self.ls_metadata["id"]`.
-        """
+        # Side Effects:
+        #     Sets `self.API_taxon` to the matching taxon dict.
+        #     Updates `self.ls_metadata["name"]` and `self.ls_metadata["id"]`.
     #get the true taxa (= self.taxaname) from the list_taxa_api and set the self.API_taxon, the self.ls_metadata["name"] and the self.ls_metadata["id"]
         self.API_error = None
         self.API_taxon = {}
@@ -242,16 +252,16 @@ class API_Abstract ():
         if not self.API_taxon:
             self.API_error = f"{self.taxaname} is not found"
 
-    def get_dict_value(self, dictionary, key):
+    def _get_dict_value(self, dictionary, key):
         """
-        Safely get a string value from a dictionary by key.
+        Get a string value from a dictionary by key.
+        """
 
-        Args:
-            dictionary (dict): Dictionary to access.
-            _key (str): Key to look up.
-        Returns:
-            str: Stripped string value if key exists; else None.
-        """
+        # Args:
+        #     dictionary (dict): Dictionary to access.
+        #     _key (str): Key to look up.
+        # Returns:
+        #     str: Stripped string value if key exists; else None.
         #return the value of a key in a dict or None
         try:
             if dictionary[key]:
@@ -260,16 +270,21 @@ class API_Abstract ():
                 return None
         except Exception:
             return None
-   
+
+#external functions and methods  
    
     #abstract functions for surclassing
     def get_metadata (self):
+        """Return the dictionary of metadata for the taxaname"""
         return self.ls_metadata   
     
     def get_synonyms(self):
+        """Return a list of synonyms for the taxaname"""
         return self.ls_synonyms
 
     def get_children (self):
+        """Return a list of synonyms for the taxaname"""
+        ##{"id" : taxa["id"], "taxaname" : taxa["full_name"], "authors" : taxa["auteur"], "rank" : taxa["rank"], "id_parent" : taxa["id_parent"]}
         return self.ls_children
     
      # #properties, return values
@@ -301,7 +316,6 @@ class API_Abstract ():
 ##################################################################################
 ##___FLORICAL access class based on API_Abstract, using scrapping of the web page (no API service)________________________
 class API_FLORICAL(API_Abstract):
-    #dict_rank =  {0 : '', 10 : 'Family', 14 : 'Genus', 21 : 'Species', 22 : 'subSpecies', 23 : 'Variety', 31 : 'Species'}  
     def __init__(self, myTaxonData):
         super().__init__(myTaxonData)
         self.API_taxon = {}
@@ -310,7 +324,7 @@ class API_FLORICAL(API_Abstract):
         #get the response from the server
         _url_taxref = f"http://publish.plantnet-project.org/project/florical/search?q={self.search_taxaname}"
         self.ls_metadata["url"] = _url_taxref
-        self.response = self.get_responseAPI(_url_taxref,10, False)
+        self.response = self._get_responseAPI(_url_taxref,10, False)
         if self.response is None:
             return
         #get the soup
@@ -363,7 +377,7 @@ class API_FLORICAL(API_Abstract):
             self.ls_metadata["family"] = self.API_taxon["family"]
             self.ls_metadata['genus'] = self.API_taxon['genus']
             self.ls_metadata['species'] = self.API_taxon['species']
-            #self.ls_metadata['infraspecies'] = self.get_dict_value(self.API_taxon, "infraspecies")
+            #self.ls_metadata['infraspecies'] = self._get_dict_value(self.API_taxon, "infraspecies")
             self.ls_metadata['authors'] = self.API_taxon['authors']
             self.ls_metadata["accepted"] = (self.API_taxon['valid'] == '1')
             #get the status 
@@ -446,7 +460,7 @@ class API_FLORICAL(API_Abstract):
                         if _valid:                            
                             tab_urllinks.append(tab_taxon)
             _page += 1
-            #response = self.get_responseAPI(url +'&page=' +str(_page), False)
+            #response = self._get_responseAPI(url +'&page=' +str(_page), False)
             response = requests.get(url +'&page=' +str(_page), timeout=3).text
             soup = BeautifulSoup(response, 'html.parser')
 
@@ -647,7 +661,7 @@ class API_ENDEMIA(API_Abstract):
                 _rank = f"&rank={_rank}"
         _url_taxref = f"https://api.endemia.nc/v1/taxons?q={self.search_taxaname_noprefix}{_rank}&section=flore&includes=synonyms&maxitem=10"
         #get the result
-        self.get_taxon_fromURL(_url_taxref,["data"], "full_name", "id")
+        self._get_taxon_fromURL(_url_taxref,["data"], "full_name", "id")
         
     def get_metadata(self):
         #get metadata from Endemia
@@ -655,25 +669,21 @@ class API_ENDEMIA(API_Abstract):
             return
         #self.ls_metadata["name"] = self.name
         self.ls_metadata["webpage"] = f"https://endemia.nc/flore/fiche{self.ls_metadata["id"]}"
-        self.ls_metadata["authors"] = self.get_dict_value (self.API_taxon, "auteur")
-        # try:
-        #     self.ls_metadata["rank"] = self.translate_rank(self.get_dict_value (self.API_taxon, "rank"))
-        # except Exception: 
-        #     pass
+        self.ls_metadata["authors"] = self._get_dict_value (self.API_taxon, "auteur")
         
         
         #if self.API_taxon["endemique"]:
-        self.ls_metadata["endemic"] = self.get_dict_value (self.API_taxon, "endemique")
-        self.ls_metadata["redlist_iucn"] = self.get_dict_value (self.API_taxon, "categorie_uicn")
-        self.ls_metadata["protected"] = self.get_dict_value (self.API_taxon, "protected")
+        self.ls_metadata["endemic"] = self._get_dict_value (self.API_taxon, "endemique")
+        self.ls_metadata["redlist_iucn"] = self._get_dict_value (self.API_taxon, "categorie_uicn")
+        self.ls_metadata["protected"] = self._get_dict_value (self.API_taxon, "protected")
         #get details on protected status, nomenclature, habitat and images(= a 2nd query !)
 
         # _url_taxref = f"https://api.endemia.nc/v1/taxons/flore/{self.ls_metadata["id"]}"
         # try:
-        #     _todos = self.get_responseAPI (_url_taxref, 2)
+        #     _todos = self._get_responseAPI (_url_taxref, 2)
         #     _tab_attributes = _todos["data"]["attributes"]
-        #     self.ls_metadata["published"] = (self.get_dict_value (_tab_attributes, "status") == "Published")
-        #     self.ls_metadata["habitat"] = self.get_dict_value (_tab_attributes, "typehabitat")
+        #     self.ls_metadata["published"] = (self._get_dict_value (_tab_attributes, "status") == "Published")
+        #     self.ls_metadata["habitat"] = self._get_dict_value (_tab_attributes, "typehabitat")
         # except Exception:
         #     pass
         return self.ls_metadata
@@ -690,9 +700,9 @@ class API_ENDEMIA(API_Abstract):
         except Exception: 
             return
         for taxa in result_API:
-            _name = self.get_dict_value (taxa, "full_name")
+            _name = self._get_dict_value (taxa, "full_name")
             _name = _name.strip()
-            _author = self.get_dict_value (taxa, "auteur")
+            _author = self._get_dict_value (taxa, "auteur")
             _author = _author.strip()
             if _author:
                 _name = _name + ' ' + _author
@@ -709,7 +719,7 @@ class API_ENDEMIA(API_Abstract):
         table_valid = []
         _url_taxref = f"https://api.endemia.nc/v1/taxons?q={self.search_taxaname_noprefix}&section=flore"
         #get the response
-        _api_result = self.get_responseAPI (_url_taxref)
+        _api_result = self._get_responseAPI (_url_taxref)
         if _api_result is None:
             return
         try:
@@ -718,9 +728,9 @@ class API_ENDEMIA(API_Abstract):
             return
         
         for taxa in self.API_result:
-            _rank = self.get_dict_value(taxa,"rank")
-            _name = self.get_dict_value(taxa,"full_name")
-            _rank = self.translate_rank(taxa["rank"])
+            _rank = self._get_dict_value(taxa,"rank")
+            _name = self._get_dict_value(taxa,"full_name")
+            _rank = self._translate_rank(taxa["rank"])
 
             #do not accept taxa if no name or no rank
             if len(_rank)*len(_name)==0:
@@ -775,7 +785,7 @@ class API_TAXREF(API_Abstract):
         #set the url to get the taxa from TaxRef
         _url_taxref = f"https://taxref.mnhn.fr/api/taxa/search?scientificNames={self.search_taxaname}{_rank}&kingdom=Plantae&domain=continental&page=1&size=5000"
         #get the response
-        self.get_taxon_fromURL(_url_taxref,["_embedded","taxa"], "scientificName", "id")        
+        self._get_taxon_fromURL(_url_taxref,["_embedded","taxa"], "scientificName", "id")        
 
 
     def get_metadata(self):
@@ -786,11 +796,11 @@ class API_TAXREF(API_Abstract):
         #self.ls_metadata["name"] = self.name
         self.ls_metadata["webpage"] = f"https://inpn.mnhn.fr/espece/cd_nom/{self.ls_metadata["id"]}"
         self.ls_metadata["authors"] =''
-        self.ls_metadata["family"] = self.get_dict_value (self.API_taxon, "familyName")
+        self.ls_metadata["family"] = self._get_dict_value (self.API_taxon, "familyName")
         self.ls_metadata["accepted"] = self.API_taxon["referenceId"] == self.ls_metadata["id"]
         #get authors names and year of publication
         try:
-            _authority = self.get_dict_value (self.API_taxon, "authority").split(",")
+            _authority = self._get_dict_value (self.API_taxon, "authority").split(",")
             self.ls_metadata["authors"] = _authority[0]
             self.ls_metadata["year"] = _authority[1]
             if len(self.ls_metadata["year"]) > 0:
@@ -808,7 +818,7 @@ class API_TAXREF(API_Abstract):
         try:
             _url_taxref = f"https://taxref.mnhn.fr/api/taxa/{self.ls_metadata['id']}/children" #+str(self.id) + ""
             #print (_url_taxref)
-            _todos = self.get_responseAPI (_url_taxref, 7)            
+            _todos = self._get_responseAPI (_url_taxref, 7)            
             result_API.append(self.API_taxon) #add the input taxa
             result_API += _todos["_embedded"]["taxa"] #get the children
         except Exception: 
@@ -816,16 +826,16 @@ class API_TAXREF(API_Abstract):
         #set the children in a list of dictionnary
         for taxa in result_API:
             _child =  {"id" : '', "taxaname" : '', "authors" : '', "rank" : 'Unknown', "id_parent" : ''} 
-            _child["id"] = self.get_dict_value(taxa, "id")
-            _child["id_parent"] = self.get_dict_value(taxa,"parentId")
-            _child["taxaname"] = self.get_dict_value(taxa,"scientificName")
+            _child["id"] = self._get_dict_value(taxa, "id")
+            _child["id_parent"] = self._get_dict_value(taxa,"parentId")
+            _child["taxaname"] = self._get_dict_value(taxa,"scientificName")
             try:
-                _authority = self.get_dict_value(taxa,"authority").split(",")
+                _authority = self._get_dict_value(taxa,"authority").split(",")
                 _child["authors"] = _authority[0]
             except Exception: 
                 pass
             try:
-                _child["rank"] = self.translate_rank(self.get_dict_value(taxa,"rankName"))
+                _child["rank"] = self._translate_rank(self._get_dict_value(taxa,"rankName"))
             except Exception:  
                 pass
             self.ls_children.append(_child)
@@ -841,15 +851,15 @@ class API_TAXREF(API_Abstract):
         try: 
             #need a new API query to get the synonyms   
             _url_taxref = f"https://taxref.mnhn.fr/api/taxa/{self.ls_metadata['id']}/synonyms" # + str(self.id) +""
-            _todos = self.get_responseAPI (_url_taxref, 2)
+            _todos = self._get_responseAPI (_url_taxref, 2)
             result_API = _todos["_embedded"]["taxa"]
         except Exception: 
             return
         for taxa in result_API:
             #get the name and the authors
-            _name = self.get_dict_value(taxa,"scientificName")
+            _name = self._get_dict_value(taxa,"scientificName")
             try:
-                _authority = self.get_dict_value(taxa,"authority").split(",") #split to extract the authors from the date
+                _authority = self._get_dict_value(taxa,"authority").split(",") #split to extract the authors from the date
                 _authors = _authority[0].strip()
             except Exception:
                 _authors = ''
@@ -892,7 +902,7 @@ class API_IPNI(API_Abstract):
 
         _url_taxref =f"http://beta.ipni.org/api/1/search?perPage=5&cursor=%2A&q={self.search_taxaname_noprefix}{_rank}"
         #get the response
-        self.get_taxon_fromURL(_url_taxref,["results"], "name", "fqId")
+        self._get_taxon_fromURL(_url_taxref,["results"], "name", "fqId")
 
     def get_metadata(self):
         #get metadata from IPNI
@@ -900,19 +910,15 @@ class API_IPNI(API_Abstract):
             return
         #self.ls_metadata["name"] = self.name
         self.ls_metadata["webpage"] =f"https://www.ipni.org/n/{self.ls_metadata["id"]}"
-        self.ls_metadata["authors"] = self.get_dict_value (self.API_taxon, "authors")
-        # try:
-        #     self.ls_metadata["rank"] = self.translate_rank(self.get_dict_value (self.API_taxon, "rank"))
-        # except Exception: 
-        #     pass
+        self.ls_metadata["authors"] = self._get_dict_value (self.API_taxon, "authors")
         
-        self.ls_metadata["family"] = self.get_dict_value (self.API_taxon, "family")          
-        self.ls_metadata["publication"] = self.get_dict_value (self.API_taxon, "reference")
+        self.ls_metadata["family"] = self._get_dict_value (self.API_taxon, "family")          
+        self.ls_metadata["publication"] = self._get_dict_value (self.API_taxon, "reference")
 
         #get the year of publication
-        _year = self.get_dict_value (self.API_taxon, "publicationYear")
+        _year = self._get_dict_value (self.API_taxon, "publicationYear")
         if _year is None:
-            _year = self.get_dict_value (self.API_taxon, "publicationYearNote")
+            _year = self._get_dict_value (self.API_taxon, "publicationYearNote")
         #set the year if exists
         if _year:
             self.ls_metadata["year"] = _year
@@ -942,17 +948,16 @@ class API_POWO(API_Abstract):
                 _rank = f"&f={_rank}"
         #create url
         _url_taxref =f"https://powo.science.kew.org/api/2/search?perPage=5&cursor=%2A&q={self.search_taxaname}{_rank}" 
-        self.get_taxon_fromURL(_url_taxref,["results"], "name", "fqId")
+        self._get_taxon_fromURL(_url_taxref,["results"], "name", "fqId", {"accepted":True})
         
     def get_metadata(self):       
         #get the metadata from POWO
         if not self.API_taxon:
             return
         #self.ls_metadata["name"] = self.name
-        self.ls_metadata["webpage"] = 'https://powo.science.kew.org' + self.get_dict_value (self.API_taxon, "url")
-        self.ls_metadata["family"] = self.get_dict_value (self.API_taxon, "family")    
-        self.ls_metadata["authors"] = self.get_dict_value (self.API_taxon, "author")
-        #self.ls_metadata["rank"] = self.translate_rank(self.get_dict_value (self.API_taxon, "rank"))
+        self.ls_metadata["webpage"] = 'https://powo.science.kew.org' + self._get_dict_value (self.API_taxon, "url")
+        self.ls_metadata["family"] = self._get_dict_value (self.API_taxon, "family")    
+        self.ls_metadata["authors"] = self._get_dict_value (self.API_taxon, "author")
         self.ls_metadata["accepted"] = self.API_taxon["accepted"]
         return self.ls_metadata
         
@@ -967,14 +972,14 @@ class API_POWO(API_Abstract):
         try: 
             #need a new API query to get the synonyms   
             _url_taxref = f"https://powo.science.kew.org/api/2/taxon/{self.ls_metadata["id"]}"
-            _todos = self.get_responseAPI (_url_taxref, 5)
+            _todos = self._get_responseAPI (_url_taxref, 5)
             result_API = _todos["synonyms"]
         except Exception: 
             return
         for taxa in result_API:
             #get the name and the authors
-            _name = self.get_dict_value(taxa,"name")
-            _authors = self.get_dict_value(taxa,"author")
+            _name = self._get_dict_value(taxa,"name")
+            _authors = self._get_dict_value(taxa,"author")
             if _authors:
                 _name = _name + ' ' + _authors
             if _name :
@@ -1005,14 +1010,14 @@ class API_POWO(API_Abstract):
             _taxa = _taxa.split()[0]
         #translate rank
         try:
-            _rank = self.translate_rank(_idrank)
+            _rank = self._translate_rank(_idrank)
             _rank.lower()
         except Exception:
             return
         _url_taxref =f"https://powo.science.kew.org/api/2/search?perPage=5000&cursor=%2A&q=&{_rank}={_taxa}&f=accepted_names"
         #_url_taxref = _url_taxref.replace(' ','%20')
         #increase the timeout to 20 seconds to allow big queries (up to 5000 names)
-        _todos = self.get_responseAPI (_url_taxref, 20)
+        _todos = self._get_responseAPI (_url_taxref, 20)
         #try to get result JSON
 
         table_taxref = {'fqId': self.API_taxon['fqId'], 'name': self.API_taxon['name'], 'author': self.API_taxon['author'], 'rank': self.API_taxon['rank']}
@@ -1029,15 +1034,15 @@ class API_POWO(API_Abstract):
         _index_taxa_id = {}
         #_index_taxa_id = {tax["name"]: tax["id"] for tax in table_taxref}
         for taxa in table_taxref:
-            _name = self.get_dict_value(taxa,"name")
+            _name = self._get_dict_value(taxa,"name")
             taxa["index"] = index
             _index_taxa_id[_name] = index
             index += 1
         #search for parent
         for taxa in table_taxref:
-            _rank = self.get_dict_value(taxa,"rank").lower()
-            _name = self.get_dict_value(taxa,"name")
-            _id = self.get_dict_value(taxa,"fqId")
+            _rank = self._get_dict_value(taxa,"rank").lower()
+            _name = self._get_dict_value(taxa,"name")
+            _id = self._get_dict_value(taxa,"fqId")
             if len(_rank)==0:
                 continue
             taxa["id_parent"]=0
@@ -1047,7 +1052,7 @@ class API_POWO(API_Abstract):
             if _rank in ['subspecies', 'variety']:
                 _parent = ' '.join(tb_taxa[0:2])
             elif _rank =='genus':
-                _parent = self.get_dict_value(taxa,"family")
+                _parent = self._get_dict_value(taxa,"family")
             else:
                 _parent = tb_taxa[0]
             #get the parent id within the table itself (use _index_taxa_id)
@@ -1069,10 +1074,10 @@ class API_POWO(API_Abstract):
         _table_data += search_child_taxref(idroot)
         self.ls_children =[]
         for taxa in _table_data:
-            _author = self.get_dict_value(taxa,"author")
-            _rank = self.get_dict_value(taxa,"rank")
-            _rank = self.translate_rank(_rank)
-            _name = self.get_dict_value(taxa,"name")
+            _author = self._get_dict_value(taxa,"author")
+            _rank = self._get_dict_value(taxa,"rank")
+            _rank = self._translate_rank(_rank)
+            _name = self._get_dict_value(taxa,"name")
             _child =  {"id" : taxa["index"], "taxaname" : _name, "authors" : _author, "rank" : _rank, "id_parent" : taxa["id_parent"]}
             self.ls_children.append(_child)
         return self.ls_children
@@ -1083,13 +1088,13 @@ class API_GBIF(API_Abstract):
     def __init__(self, myTaxonData):
         super().__init__(myTaxonData)
         _url_taxref = f"https://api.gbif.org/v1/species/match?name={self.search_taxaname_noprefix}&verbose=true"
-        self.get_taxon_fromURL(_url_taxref, None, "canonicalName", "usageKey")
+        self._get_taxon_fromURL(_url_taxref, None, "canonicalName", "usageKey")
         if self.API_taxon :
             return
     #test for alternative in self.API_result
         try:
             self.API_result = self.API_result[0]["alternatives"]
-            self.get_taxon_from_API_Result("canonicalName", "usageKey",{"kingdom": "Plantae"})
+            self._get_taxon_from_API_Result("canonicalName", "usageKey",{"kingdom": "Plantae"})
         except Exception:
             return
 
@@ -1098,16 +1103,16 @@ class API_GBIF(API_Abstract):
         if not self.API_taxon:
             return
         self.ls_metadata["webpage"] = f"https://www.gbif.org/species/{self.ls_metadata["id"]}"
-        _scientificname = self.get_dict_value (self.API_taxon, "scientificName")
+        _scientificname = self._get_dict_value (self.API_taxon, "scientificName")
         if len(_scientificname) > 0:
             _author = _scientificname.replace(self.ls_metadata["name"], "").strip()
             if _author:
                 self.ls_metadata["authors"] = _author
-        #self.ls_metadata["rank"] = self.get_dict_value (self.API_taxon, "rank").title()
-        self.ls_metadata["class"] = self.get_dict_value (self.API_taxon, "class")
-        self.ls_metadata["order"] = self.get_dict_value (self.API_taxon, "order")
-        self.ls_metadata["family"] = self.get_dict_value (self.API_taxon, "family")
-        self.ls_metadata["accepted"] = self.get_dict_value (self.API_taxon, "status") == 'ACCEPTED'
+        #self.ls_metadata["rank"] = self._get_dict_value (self.API_taxon, "rank").title()
+        self.ls_metadata["class"] = self._get_dict_value (self.API_taxon, "class")
+        self.ls_metadata["order"] = self._get_dict_value (self.API_taxon, "order")
+        self.ls_metadata["family"] = self._get_dict_value (self.API_taxon, "family")
+        self.ls_metadata["accepted"] = self._get_dict_value (self.API_taxon, "status") == 'ACCEPTED'
         return self.ls_metadata
     
 
@@ -1116,7 +1121,7 @@ class API_INATURALIST(API_Abstract):
     def __init__(self, myTaxonData):
         super().__init__(myTaxonData)
         _url_taxref = f"https://api.inaturalist.org/v1/taxa?q={self.search_taxaname_noprefix}"
-        self.get_taxon_fromURL(_url_taxref,["results"], "matched_term", "id")
+        self._get_taxon_fromURL(_url_taxref,["results"], "matched_term", "id")
 
     
     def get_metadata(self):
@@ -1124,11 +1129,11 @@ class API_INATURALIST(API_Abstract):
         if not self.API_taxon:
             return
         self.ls_metadata["webpage"] = f"https://www.inaturalist.org/observations?taxon_id={self.ls_metadata["id"]}"
-        #self.ls_metadata["rank"] = self.get_dict_value (self.API_taxon, "rank").title()
-        #self.ls_metadata["extinct"] = self.get_dict_value (self.API_taxon, "extinct")
-        self.ls_metadata["occurrences"] = self.get_dict_value (self.API_taxon, "observations_count")
+        #self.ls_metadata["rank"] = self._get_dict_value (self.API_taxon, "rank").title()
+        #self.ls_metadata["extinct"] = self._get_dict_value (self.API_taxon, "extinct")
+        self.ls_metadata["occurrences"] = self._get_dict_value (self.API_taxon, "observations_count")
         if "conservation_status" in self.API_taxon:
-            self.ls_metadata["redlist_iucn"] = self.get_dict_value (self.API_taxon["conservation_status"], "status").upper()
+            self.ls_metadata["redlist_iucn"] = self._get_dict_value (self.API_taxon["conservation_status"], "status").upper()
         return self.ls_metadata
 
 
@@ -1144,7 +1149,7 @@ class API_TROPICOS(API_Abstract):
             self.API_error = "Connection error - Use a valid api_key to access to Tropicos"
             return
         #get the response
-        self.get_taxon_fromURL(_url_taxref, None, "ScientificName", "NameId")
+        self._get_taxon_fromURL(_url_taxref, None, "ScientificName", "NameId") #, {"NomenclatureStatusID":1})
         
     def get_metadata(self):
     #get metadata from Tropicos
@@ -1152,28 +1157,26 @@ class API_TROPICOS(API_Abstract):
             return
         #self.ls_metadata["name"] = self.name
         self.ls_metadata["webpage"] = f"https://www.tropicos.org/name/{self.ls_metadata["id"]}"        
-        self.ls_metadata["authors"] = self.get_dict_value (self.API_taxon, "Author")
-        self.ls_metadata["family"] = self.get_dict_value (self.API_taxon, "Family")
-        # try:
-        #     self.ls_metadata["rank"] = self.translate_rank(self.get_dict_value (self.API_taxon, "RankAbbreviation"))
-        # except Exception:
-        #     pass
-        _valid = self.get_dict_value (self.API_taxon, "NomenclatureStatusName")
+        self.ls_metadata["authors"] = self._get_dict_value (self.API_taxon, "Author")
+        self.ls_metadata["family"] = self._get_dict_value (self.API_taxon, "Family")
+        self.ls_metadata["status"] = self._get_dict_value (self.API_taxon, "NomenclatureStatusName")
+
+        _valid = self._get_dict_value (self.API_taxon, "NomenclatureStatusName")
         #self.ls_metadata["accepted"] = (_valid =='Legitimate')
         if _valid =='Legitimate':
             self.ls_metadata["accepted"] = True
         elif _valid in ('Illegitimate','Invalid'):
             self.ls_metadata["accepted"] = False
 
-        _publication = self.get_dict_value (self.API_taxon, "DisplayReference")
+        _publication = self._get_dict_value (self.API_taxon, "DisplayReference")
         if _publication:
             self.ls_metadata["publication"] = _publication
 
-        _year = self.get_dict_value (self.API_taxon, "DisplayDate")
+        _year = self._get_dict_value (self.API_taxon, "DisplayDate")
         if _year:
             self.ls_metadata["year"] = _year
             #self.ls_metadata["nomenclature"] ="Published"
-        #self.ls_metadata["publication"] = self.get_dict_value (self.API_taxon, "DisplayReference")
+        #self.ls_metadata["publication"] = self._get_dict_value (self.API_taxon, "DisplayReference")
         # self.ls_metadata["nomenclature"] ="Unpublished"
         # if len(self.ls_metadata["year"]) > 0:
         #     self.ls_metadata["nomenclature"] ="Published"
@@ -1187,7 +1190,7 @@ class API_TROPICOS(API_Abstract):
         try:
             _url_taxref =f"http://services.tropicos.org/Name/{self.ls_metadata["id"]}/Synonyms?apikey={self.key_tropicos}&format=json"
             #print (_url_taxref)
-            result_API = self.get_responseAPI (_url_taxref)
+            result_API = self._get_responseAPI (_url_taxref)
         except Exception: 
             return
         #get dictionnary 
@@ -1196,7 +1199,7 @@ class API_TROPICOS(API_Abstract):
         for taxa in result_API:
             if taxa.get('SynonymName', None):
                 _synonym = taxa['SynonymName']
-                _name = self.get_dict_value (_synonym, "ScientificNameWithAuthors")
+                _name = self._get_dict_value (_synonym, "ScientificNameWithAuthors")
                 tab_synonyms.add(_name)
             self.ls_synonyms = list(tab_synonyms)
         return self.ls_synonyms
@@ -1208,7 +1211,7 @@ class API_TROPICOS(API_Abstract):
         # _url_taxref = self.ls_metadata["url"].replace('&type=exact','&type=wildcard')
         _url_taxref =f"http://services.tropicos.org/Name/Search?name={self.search_taxaname_noprefix}&type=wildcard&apikey={self.key_tropicos}&format=json"
         #get the response
-        api_result = self.get_responseAPI (_url_taxref,10)
+        api_result = self._get_responseAPI (_url_taxref,10)
         if api_result is None:
             return
        
@@ -1220,11 +1223,11 @@ class API_TROPICOS(API_Abstract):
 
         for taxa in api_result:
             taxa["id_parent"] = 0
-            _rank = self.translate_rank(taxa["RankAbbreviation"])
+            _rank = self._translate_rank(taxa["RankAbbreviation"])
             _idrank = dict_idrank.get(_rank.lower(), 0)
             if _idrank < self.idrank:
                 continue
-            _name = self.get_dict_value(taxa,"ScientificName")
+            _name = self._get_dict_value(taxa,"ScientificName")
             taxa["rank"] = _rank
 
             #get the parent name

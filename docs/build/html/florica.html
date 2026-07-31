@@ -388,18 +388,6 @@ Creates the metadata worker (Qthread) and sets the slots signals.</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="florica.nomen.app.db_postgres">
-<span class="sig-prename descclassname"><span class="pre">florica.nomen.app.</span></span><span class="sig-name descname"><span class="pre">db_postgres</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.nomen.app.db_postgres" title="Link to this definition">¶</a></dt>
-<dd><p>DBASE: returns the instance of the open db connexion (DatabaseConnection)</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="florica.nomen.app.db_taxa">
-<span class="sig-prename descclassname"><span class="pre">florica.nomen.app.</span></span><span class="sig-name descname"><span class="pre">db_taxa</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.nomen.app.db_taxa" title="Link to this definition">¶</a></dt>
-<dd><p>DBASE: returns the instance of the open dbtaxa connexion (PN_dbTaxa)</p>
-</dd></dl>
-
-<dl class="py function">
 <dt class="sig sig-object py" id="florica.nomen.app.main">
 <span class="sig-prename descclassname"><span class="pre">florica.nomen.app.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.nomen.app.main" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -637,16 +625,6 @@ childs of myPNTaxa are new childs of the selected taxon if no errors raised by d
 <dd><p>The PNTaxa_search class is a custom class that inherits from QtWidgets.QWidget.
 It is designed to display a search widget composed of a search text and a Qtreeview result with matched taxa and score.</p>
 <dl class="simple">
-<dt>Attributes:</dt><dd><p>lineEdit_search_taxa (QtWidgets.QLineEdit): The search text input field.
-treeview_scoretaxa (QtWidgets.QTreeView): The treeview widget that displays the search results.</p>
-</dd>
-<dt>Methods:</dt><dd><p>__init__ : Initializes the search widget.
-setText : Sets the text of the search input field.
-selectedTaxa : Returns the selected taxon object.
-selectedTaxonRef : Returns the reference of the selected taxon.
-selectedScore : Returns the score of the selected taxon.
-selectedTaxaId : Returns the ID of the selected taxon.</p>
-</dd>
 <dt>Signals:</dt><dd><p>selectionChanged (str): Emitted when the selection in the treeview changes.
 doubleClicked (object): Emitted when an item in the treeview is double-clicked.</p>
 </dd>
@@ -663,27 +641,52 @@ doubleClicked (object): Emitted when an item in the treeview is double-clicked.<
 <dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.currentIndex">
+<span class="sig-name descname"><span class="pre">currentIndex</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.currentIndex" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current Index of the treeview_scoretaxa</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.selectedScore">
+<span class="sig-name descname"><span class="pre">selectedScore</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.selectedScore" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current selected taxa score</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.selectedTaxa">
+<span class="sig-name descname"><span class="pre">selectedTaxa</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.selectedTaxa" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current selected taxa name</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.selectedTaxaId">
+<span class="sig-name descname"><span class="pre">selectedTaxaId</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.selectedTaxaId" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current selected id_taxonref</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.selectedTaxonRef">
+<span class="sig-name descname"><span class="pre">selectedTaxonRef</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.selectedTaxonRef" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current selected taxonref</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_search.setText">
+<span class="sig-name descname"><span class="pre">setText</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">newtext</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_search.setText" title="Link to this definition">¶</a></dt>
+<dd><p>Set the text of the search input field.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_searchAPI">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">florica.models.taxa_model.</span></span><span class="sig-name descname"><span class="pre">PNTaxa_searchAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_searchAPI" title="Link to this definition">¶</a></dt>
-<dd><p>Worker thread to query multiple biodiversity APIs asynchronously.</p>
-<dl class="simple">
-<dt>Emits:</dt><dd><p>Result_Signal (str, object): Signal emitted with API name and data dictionary or special status strings like “END” or “NOTCONNECTED”.</p>
-</dd>
-<dt>Args:</dt><dd><p>parent (QObject): Parent QObject for the thread.
-myPNTaxa (object, optional): Model or taxon object to query. Defaults to None.
-filter (str, optional): Limits queries to a single API from the supported list. Defaults to None.</p>
-</dd>
-<dt>Attributes:</dt><dd><p>PNTaxa_model (object): The taxon model to query.
-status (int): Thread status flag, 1 for running, 0 for stopped.
-list_api (list): List of API names to query.</p>
-</dd>
-</dl>
+<dd><p>Worker thread to query multiple biodiversity APIs asynchronously.
+Emits api_signal with data dictionary and API name or special status strings like “END” or “NOTCONNECTED”.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_searchAPI.Result_Signal">
-<span class="sig-name descname"><span class="pre">Result_Signal</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_searchAPI.Result_Signal" title="Link to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_searchAPI.api_signal">
+<span class="sig-name descname"><span class="pre">api_signal</span></span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_searchAPI.api_signal" title="Link to this definition">¶</a></dt>
 <dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
 </dd></dl>
 
@@ -696,16 +699,7 @@ list_api (list): List of API names to query.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.taxa_model.PNTaxa_searchAPI.run">
 <span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.taxa_model.PNTaxa_searchAPI.run" title="Link to this definition">¶</a></dt>
-<dd><p>Main thread loop that queries each API in the list sequentially.
-Steps:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>Checks for internet connectivity.</p></li>
-<li><p>Iterates over the APIs to query metadata and synonyms.</p></li>
-<li><p>Emits results through Result_Signal.</p></li>
-<li><p>Stops if status is set to 0.</p></li>
-</ul>
-</div></blockquote>
+<dd><p>Main thread loop that queries each API in the list sequentially</p>
 </dd></dl>
 
 </dd></dl>
@@ -857,82 +851,19 @@ self.API_error (str): the last error from the API.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_dict_value">
-<span class="sig-name descname"><span class="pre">get_dict_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dictionary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_dict_value" title="Link to this definition">¶</a></dt>
-<dd><p>Safely get a string value from a dictionary by key.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>dictionary (dict): Dictionary to access.
-_key (str): Key to look up.</p>
-</dd>
-<dt>Returns:</dt><dd><p>str: Stripped string value if key exists; else None.</p>
-</dd>
-</dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_responseAPI">
-<span class="sig-name descname"><span class="pre">get_responseAPI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_json</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_responseAPI" title="Link to this definition">¶</a></dt>
-<dd><p>Send a GET request to a URL and return JSON or text response.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>_url (str): URL to request.
-_timeout (int, optional): Request timeout in seconds. Default is 5.
-_json (bool, optional): If True, parse response as JSON; else return text. Default True.</p>
-</dd>
-<dt>Returns:</dt><dd><p>dict or str: Parsed JSON response or raw text, or empty string on failure.</p>
-</dd>
-</dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_taxon_fromURL">
-<span class="sig-name descname"><span class="pre">get_taxon_fromURL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">list_items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_taxon_fromURL" title="Link to this definition">¶</a></dt>
-<dd><p>Get the response from a URL and set the self.API_result.
-list_items = key(s) to search in _api_result (ex: [“results”, “data”], search for dict [“results”][“data”])
-Args:
--url (str): URL to request.
--list_items (list): List of key(s) to search in _api_result
--field_name (str): Field name to search in self.API_result
--field_id (str): Field id to search in self.API_result
--filters (dict, optional): Filters to apply when searching the self.API_result</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.get_taxon_from_API_Result">
-<span class="sig-name descname"><span class="pre">get_taxon_from_API_Result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.get_taxon_from_API_Result" title="Link to this definition">¶</a></dt>
-<dd><p>Set the self.API_Taxon
-Find and set the taxon data matching <cite>self.taxaname</cite> from self.API_result.</p>
-<dl class="simple">
-<dt>Args:</dt><dd><p>field_name (str): Key name for taxon name field.
-field_id (str): Key name for taxon ID field.
-filters (dict, optional): Additional dictionnary filters to apply to the taxa dicts.</p>
-</dd>
-<dt>Side Effects:</dt><dd><p>Sets <cite>self.API_taxon</cite> to the matching taxon dict.
-Updates <cite>self.ls_metadata[“name”]</cite> and <cite>self.ls_metadata[“id”]</cite>.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="florica.models.api_taxonomy.API_Abstract.translate_rank">
-<span class="sig-name descname"><span class="pre">translate_rank</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">_rank</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_Abstract.translate_rank" title="Link to this definition">¶</a></dt>
-<dd><p>Translate a taxonomic rank string or integer to a standard English rank name.
-Args:
-_rank (str): The input rank string (may include accents or abbreviations).
-Returns:
-str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
+<dd><p>Return a list of synonyms for the taxaname</p>
 </dd></dl>
 
 <dl class="py property">
@@ -968,17 +899,20 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_ENDEMIA.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_ENDEMIA.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_ENDEMIA.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_ENDEMIA.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_ENDEMIA.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_ENDEMIA.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -988,7 +922,8 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_FLORICAL.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_FLORICAL.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_FLORICAL.get_dict_from_species">
@@ -998,12 +933,14 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_FLORICAL.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_FLORICAL.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_FLORICAL.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_FLORICAL.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1013,7 +950,8 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_GBIF.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_GBIF.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1023,7 +961,8 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_INATURALIST.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_INATURALIST.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1033,7 +972,8 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_IPNI.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_IPNI.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1043,17 +983,20 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_POWO.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_POWO.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_POWO.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_POWO.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_POWO.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_POWO.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1063,17 +1006,20 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TAXREF.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TAXREF.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TAXREF.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TAXREF.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TAXREF.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TAXREF.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1083,17 +1029,20 @@ str: Standardized rank name capitalized, or ‘Unknown’ if not found.</p>
 <dd><dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TROPICOS.get_children">
 <span class="sig-name descname"><span class="pre">get_children</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TROPICOS.get_children" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TROPICOS.get_metadata">
 <span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TROPICOS.get_metadata" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return the dictionary of metadata for the taxaname</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.models.api_taxonomy.API_TROPICOS.get_synonyms">
 <span class="sig-name descname"><span class="pre">get_synonyms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.models.api_taxonomy.API_TROPICOS.get_synonyms" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Return a list of synonyms for the taxaname</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1471,22 +1420,26 @@ _validate(): Compares the original data with the current data in the tree view a
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.core.widgets.PN_JsonQTreeView.changed">
 <span class="sig-name descname"><span class="pre">changed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.widgets.PN_JsonQTreeView.changed" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>check if treeview changed from initial json_data</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.core.widgets.PN_JsonQTreeView.dict_user_properties">
 <span class="sig-name descname"><span class="pre">dict_user_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.widgets.PN_JsonQTreeView.dict_user_properties" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>Get the json_data from the treeview model (with values changed by user)</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.core.widgets.PN_JsonQTreeView.refresh">
 <span class="sig-name descname"><span class="pre">refresh</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.widgets.PN_JsonQTreeView.refresh" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>refresh the treeview with the json data</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="florica.core.widgets.PN_JsonQTreeView.setData">
 <span class="sig-name descname"><span class="pre">setData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#florica.core.widgets.PN_JsonQTreeView.setData" title="Link to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>set the json_data into the treeview model</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -1593,8 +1546,6 @@ Returns a dict or None if the name is not a valid species-level taxon.</p>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Florica</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#florica.nomen.app.MainWindow"><code class="docutils literal notranslate"><span class="pre">MainWindow</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#florica.nomen.app.MainWindowController"><code class="docutils literal notranslate"><span class="pre">MainWindowController</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#florica.nomen.app.db_postgres"><code class="docutils literal notranslate"><span class="pre">db_postgres()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#florica.nomen.app.db_taxa"><code class="docutils literal notranslate"><span class="pre">db_taxa()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#florica.nomen.app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#florica.models.taxa_model.PNSynonym_edit"><code class="docutils literal notranslate"><span class="pre">PNSynonym_edit</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#florica.models.taxa_model.PNTaxa"><code class="docutils literal notranslate"><span class="pre">PNTaxa</span></code></a></li>

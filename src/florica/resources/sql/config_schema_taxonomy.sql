@@ -267,6 +267,9 @@ COMMENT ON FUNCTION taxonomy.pn_taxa_searchname (TEXT, NUMERIC) IS 'Search for a
 
 
 
+
+
+
 ---------------------------------------------------------------------------------------------------------------
 -------##return a table with valid names from an array of taxa_names
 ---------------------------------------------------------------------------------------------------------------
@@ -339,8 +342,44 @@ COMMENT ON FUNCTION taxonomy.pn_taxa_searchtable (TEXT, TEXT) IS 'Search for tax
 ;
 
 
+
+
+
 -----------------------------------------------------------------------------------------------
----Add (id_synomy = 0) or Update (id_synonym >0)
+---Add a list of synonyms to one idtaxonref
+---RETURNS the number of synonyms added to the database (do nothing if duplicates, conflict on _keyname )
+------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION taxonomy.pn_names_add_batch(
+    p_idtaxonref INTEGER,
+    p_ls_synonyms TEXT[]
+)
+/*
+SELECT * FROM taxonomy.pn_names_add_synonyms(18826, array['essai1', 'essai2','essai3','essai4','essai5'])
+*/
+RETURNS INTEGER
+LANGUAGE sql
+AS
+$$
+	
+    WITH inserted AS (
+        INSERT INTO taxonomy.taxa_nameset
+            (id_taxonref, name, category)
+        SELECT 
+            p_idtaxonref,
+            unnest(p_ls_synonyms),
+            12 -- unknown category
+        ON CONFLICT ON CONSTRAINT taxa_name_un DO NOTHING
+        RETURNING 1
+    )
+    SELECT count(*)::INTEGER
+    FROM inserted;
+$$;
+COMMENT ON FUNCTION taxonomy.pn_names_add_batch(INTEGER,TEXT[]) IS 'Bulk insert names with default category UNKNOWN (12), mainly for external imports'
+;
+
+
+-----------------------------------------------------------------------------------------------
+---Add a new synonym to a id_taxonref
 ---RETURN id_synonym if the execution of the SQL statement (update or insert) is successfull
 ------------------------------------------------------------------------------------------------
 
@@ -387,8 +426,11 @@ BEGIN
 	RETURN newitem;
 END;
 $function$;
-COMMENT ON FUNCTION taxonomy.pn_names_add(INTEGER,TEXT,TEXT) IS 'Add a name to the global nameset'
+COMMENT ON FUNCTION taxonomy.pn_names_add(INTEGER,TEXT,TEXT) IS 'Add a single name with category handling'
 ;
+
+
+
 
 -----------------------------------------------------------------------------------------------
 ---update a name in the nameDataSet
@@ -843,9 +885,9 @@ BEGIN
 		WHERE a.id_taxonref = idtaxonref
 		RETURNING id_taxonref, id_parent, id_rank INTO _idtaxonref, _idparent, _idrank;
 
-	-- if rank is below species rank (id_rank > 21)
+	-- if rank is below species rank (id_rank > 20)
 	-- simulate change to fire the trigger on species names into taxa_nameset (cf. pn_trigger_refresh_nameset)
-		IF _idrank > 21 THEN
+		IF _idrank > 20 THEN
 			UPDATE taxonomy.taxa_reference a
 			SET id_taxonref = id_taxonref
 			WHERE id_taxonref = taxonomy.pn_taxa_getparent (_idparent, 21);
@@ -879,7 +921,7 @@ AS $$
 	    SELECT
 	        CASE
 	            WHEN linked_ranks = FALSE THEN 1000
-	            WHEN w.id_rank IN (6, 8, 10, 12) THEN w.id_rank + 1
+	            WHEN w.id_rank IN (4, 7, 9, 12) THEN w.id_rank + 1
 	            WHEN w.id_rank >= 14 THEN 1000
 	            ELSE w.id_rank
 	        END AS idrank_max
@@ -997,19 +1039,19 @@ RETURN QUERY
 		taxa_names AS (--compilation of auto-generated names derived from taxonomy.taxa_reference name
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(c.basename), b.basename, d.prefix, a.basename) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
-				INNER JOIN taxonomy.taxa_reference b ON b.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 21)
+				INNER JOIN taxonomy.taxa_reference b ON b.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 20)
 				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 14)
 				INNER JOIN taxonomy.taxa_rank d ON d.id_rank = a.id_rank
-				WHERE a.id_rank > 21 and a.id_rank < 31
+				WHERE a.id_rank > 20 and a.id_rank < 31
 			UNION ALL
 				SELECT  a.id_taxonref, INITCAP(a.basename) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
-				WHERE a.id_rank < 21
+				WHERE a.id_rank < 20
 			UNION ALL
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(c.basename), a.basename) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
 				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 14)
-				WHERE a.id_rank = 21
+				WHERE a.id_rank = 20
 			UNION ALL
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(b.basename), d.prefix, a.basename) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
@@ -1022,19 +1064,19 @@ RETURN QUERY
 				FROM tmp_taxa_reference a
 				--INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 1)
 				INNER JOIN taxonomy.taxa_rank d ON d.id_rank = a.id_rank
-				WHERE a.id_rank < 7
+				WHERE a.id_rank < 5
 			UNION ALL
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(c.basename), d.prefix, INITCAP(a.basename)) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
 				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 6)
 				INNER JOIN taxonomy.taxa_rank d ON d.id_rank = a.id_rank
-				WHERE a.id_rank IN (7, 8, 9)
+				WHERE a.id_rank IN (5, 6, 7, 8)
 			UNION ALL
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(c.basename), d.prefix, INITCAP(a.basename)) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
-				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 10)
+				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 9)
 				INNER JOIN taxonomy.taxa_rank d ON d.id_rank = a.id_rank
-				WHERE a.id_rank IN (11, 12, 13)
+				WHERE a.id_rank IN (10, 11, 12)
 			UNION ALL
 				SELECT  a.id_taxonref, concat_ws (chr(32), INITCAP(c.basename), d.prefix, INITCAP(a.basename)) AS taxa_name, a.authors
 				FROM tmp_taxa_reference a
@@ -1045,7 +1087,7 @@ RETURN QUERY
 		ls_autonyms AS (--list of id_species to create autonyms (species with at least one infraspecific child)
 				SELECT taxonomy.pn_taxa_getparent(a.id_parent, 21) AS id_species, id_rank
 				FROM taxonomy.taxa_reference a
-				WHERE a.id_rank > 21 AND a.id_rank < 31
+				WHERE a.id_rank > 20 AND a.id_rank < 31
 				GROUP BY id_species,id_rank
 		),
 		taxa_autonyms AS (--create autonyms
@@ -1057,7 +1099,7 @@ RETURN QUERY
 				INNER JOIN taxonomy.taxa_reference c ON c.id_taxonref = taxonomy.pn_taxa_getparent(a.id_parent, 14)
 				INNER JOIN ls_autonyms b ON a.id_taxonref = b.id_species
 				INNER JOIN taxonomy.taxa_rank d ON b.id_rank = d.id_rank
-				WHERE a.id_rank = 21
+				WHERE a.id_rank = 20
 		),
 		taxa_authors AS (--make a compilation including authors, even if no authors
 				SELECT 1::integer code, a.id_taxonref, CONCAT_WS(CHR(32),a.taxa_name, a.authors) taxa_name 
@@ -1131,7 +1173,7 @@ BEGIN
 			RAISE invalid_parameter_value USING MESSAGE = 'Error: to_idtaxonref parameter is not a valid reference' ;
 		END IF;	
 	--Verify that ranks are equal when merge is apply on groups (including genus and above)	
-		IF from_idrank <21 AND (to_idrank <> from_idrank) 	THEN
+		IF from_idrank <20 AND (to_idrank <> from_idrank) 	THEN
 			RAISE invalid_parameter_value USING MESSAGE = 'Error : from_idtaxonref should be a sibling of to_idtaxonref - ranks are not compatible' ;
 		END IF;	
 	--Verify that the to_idataxonref is not a child of the from_idtaxonref
@@ -1198,7 +1240,7 @@ CREATE OR REPLACE VIEW taxonomy.taxa_hierarchy AS
 	WITH 
 	parent_species AS (
 		SELECT id_parent FROM taxonomy.taxa_reference a
-		WHERE id_rank >= 21
+		WHERE id_rank >= 20
 		GROUP BY id_parent
 	),
 	genus AS (
@@ -1207,10 +1249,10 @@ CREATE OR REPLACE VIEW taxonomy.taxa_hierarchy AS
 	),
 	genus_species AS (
 		SELECT
-		CASE WHEN b.id_rank = 21 THEN b.id_taxonref
-		ELSE taxonomy.pn_taxa_getparent(b.id_taxonref, 21)
+		CASE WHEN b.id_rank = 20 THEN b.id_taxonref
+		ELSE taxonomy.pn_taxa_getparent(b.id_taxonref, 20)
 		END AS id_species,
-		CASE WHEN b.id_rank > 21 THEN b.id_taxonref
+		CASE WHEN b.id_rank > 20 THEN b.id_taxonref
 		ELSE NULL
 		END AS id_infra,
 		a.id_genus,
@@ -1220,7 +1262,7 @@ CREATE OR REPLACE VIEW taxonomy.taxa_hierarchy AS
 		ON a.id_parent_species = b.id_parent	
 	),
 	genus_family AS ( 
-		SELECT a.id_genus, taxonomy.pn_taxa_getparent(a.id_genus, 10) AS id_family
+		SELECT a.id_genus, taxonomy.pn_taxa_getparent(a.id_genus, 9) AS id_family
 		FROM (SELECT id_genus FROM genus_species GROUP BY id_genus) a
 	),
 	family_genus_species AS ( 
@@ -1280,29 +1322,6 @@ BEGIN
 
 --check for the new basename if different
 	IF _basename <> OLD.basename THEN
-	--taxonomic : test the length of the newbasename (must be >=3)
-		--SELECT * FROM taxonomy.pn_taxa_edit_reference (0, 'po', 'Birnbaum', 240, 21, False, False);
-		--INSERT INTO taxonomy.taxa_reference (basename, id_parent, id_rank) values ('ab', 16184, 10);
---			IF LENGTH(_basename) < 3 THEN
---				RAISE EXCEPTION check_violation 
---				USING message 	= _headline,
---					  detail 	= 'Taxonomic rule - the minimum length of the taxon name is 3 characters',
---					  hint 		= 'Modify the basename';
---			END IF;
-	--taxonomic : test the unicity of names for id_rank < 21
-	--INSERT INTO taxonomy.taxa_reference (basename, id_parent, id_rank) values ('Guioa', 94, 14);
---			IF NEW.id_rank < 21 THEN
---				IF 
---					(SELECT id_taxonref FROM taxonomy.taxa_reference a 
---					 WHERE a.basename = lower(_basename))
---				IS NOT NULL THEN 
---					RAISE EXCEPTION check_violation 
---					USING message 	= _headline,
---						  detail 	= concat('Taxonomic rule - the basename {', _basename, '} already exists'),
---						  hint 		= 'Check basename for the considered rank';
---				END IF;
---			END IF;
-
 	--taxonomic : test the name ending, implicit for rank < = 13 (Subtribus)
 		--SELECT * FROM taxonomy.pn_taxa_edit (0, 'family', 'authors', 16217, 10, False, False)
 		--UPDATE taxonomy.taxa_reference SET basename = 'family' WHERE id_taxonref = 15;
@@ -1334,26 +1353,6 @@ BEGIN
 					  detail 	= concat('Taxonomic rule - the basename {', _basename, '} cannot be similar to the parent basename'),
 					  hint 		= 'Modify the basename of taxon or parent';
 			END IF;
-	--taxonomic : the combination of _basename and id_parent must be unique
-		--exception already manage by unique_key (the combinaison (basename,id_parent) already exists)
-		-- SELECT * FROM taxonomy.pn_taxa_edit_reference (0, 'manihot', 'Birnbaum', 240, 21, False, False)
-		-- INSERT INTO taxonomy.taxa_reference (basename, id_parent, id_rank) values ('calvescens', 14830, 21);
-		-- UPDATE taxonomy.taxa_reference SET basename = 'cristatum' WHERE id_taxonref = 6343;
-		-- UPDATE taxonomy.taxa_reference SET id_parent = 750 WHERE id_taxonref = 14898;	
---			IF 
---				(SELECT id_taxonref FROM taxonomy.taxa_reference a 
---				 WHERE a.basename = _basename AND a.id_parent = NEW.id_parent AND a.id_taxonref <> NEW.id_taxonref)
---			<> NEW.id_taxonref THEN		
---				SELECT a.name INTO _taxanameparent 
---				FROM taxonomy.taxa_nameset a 
---				WHERE a.id_taxonref = NEW.id_parent AND a.category = 1;
---				RAISE EXCEPTION check_violation
---				USING  message = _headline,
---					   --detail = 'Integrity rule - the basename {' || _basename ||'} is already child of : ' || _taxanameparent,
---					   detail = concat('Integrity rule - the basename {', _basename, '} is already child of : ', _taxanameparent),
---
---					   hint   = 'Modify the basename or delete duplicate name';
---			END IF;
 	END IF;
 
 --check the combination between newidparent and newidrank
@@ -1523,6 +1522,7 @@ CREATE OR REPLACE TRIGGER trigger_after_update
 
 
 --create the taxa_nameset table with all names (category < 5)
+--DELETE FROM taxonomy.taxa_nameset WHERE category <5
 INSERT INTO taxonomy.taxa_nameset (name, category, id_taxonref)
 SELECT
 	z.original_name,

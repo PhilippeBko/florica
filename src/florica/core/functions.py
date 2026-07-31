@@ -161,8 +161,6 @@ dict_db_fields = dict_identity | dict_traits
 #      }
 # }
 
-flower_reg_pattern = r'fl\.*|bt\.*|boutons?|cauliflor(e|a|ous)?|fert(?:ile|\.|)|fleurs?|inflorescences?|flowers?|buttons?|inflos?'
-fruit_reg_pattern = r'fr\.*|figues?|fruits?|c[ôo]nes?|graines?|seeds?|figs?'
 
 
 # def get_column_type(_type):

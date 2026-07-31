@@ -19,6 +19,7 @@
   <file>src/florica/resources/icons/critical.png</file>
   <file>src/florica/resources/icons/test.png</file>
   <file>src/florica/resources/icons/information.png</file>
+  <file>src/florica/resources/icons/search.png</file>
 
   <file>src/florica/resources/ui/taxanames.ui</file>
   <file>src/florica/resources/ui/pn_addtaxa.ui</file>

@@ -134,6 +134,11 @@ class DatabaseConnection (QtWidgets.QWidget):
         """DBASE: Returns the name of the current database if it's open, otherwise `None`"""
         if self.db:
             return self.db.databaseName()
+
+    def prepare(self, sql):
+        query = QtSql.QSqlQuery(self.db)
+        query.prepare(sql)
+        return query
     
     def postgres_error(self):
         """DBASE: Converts the last error in the database connection into a text string"""
@@ -268,7 +273,35 @@ class PN_dbTaxa:
         sql_query = f"SELECT taxonomy.pn_names_add ({id_taxonref}, '{synonym}', '{category}')"
         #execute the query
         return self.db_execute_sql(sql_query)
+    
+    def db_add_synonyms(self, id_taxonref, ls_synonyms):
+        """DBASE: Add a list of synonyms to an id_taxonref, return inserted count or -1 if error"""
 
+        sql_query = """
+            SELECT taxonomy.pn_names_add_batch(?, ?::text[])
+        """
+
+        query = self.db.prepare(sql_query)
+
+        query.addBindValue(id_taxonref)
+
+        # Conversion liste Python -> tableau PostgreSQL
+        pg_array = "{" + ",".join(
+            f'"{s.replace("\\", "\\\\").replace(chr(34), "\\" + chr(34))}"'
+            for s in ls_synonyms
+        ) + "}"
+
+        query.addBindValue(pg_array)
+
+        if not query.exec():
+            print(query.lastError().text())
+            return -1
+
+        if query.next():
+            return query.value(0)
+
+        return 0
+    
     def db_edit_synonym(self, old_synonym, new_synonym, new_category = 'Orthographic'):
         """DBASE: Update a name/category of asynonym, return True or False if error"""
         sql_query = f"SELECT taxonomy.pn_names_update ('{old_synonym}','{new_synonym}', '{new_category}')"
@@ -283,6 +316,7 @@ class PN_dbTaxa:
     
     def db_update_properties (self, id_taxonref, json_properties):
         """DBASE: Update the properties field of an id_taxonref with a json string, return True or False if error"""
+        _idrankspecies = self.db_get_rank('species', 'id_rank')
         if json_properties is None:
             json_properties = 'NULL'
         else:
@@ -291,7 +325,7 @@ class PN_dbTaxa:
         sql_query = f"""UPDATE taxonomy.taxa_reference 
                         SET properties = {json_properties}
                         WHERE id_taxonref = {id_taxonref} 
-                        AND id_rank >= 21;
+                        AND id_rank >= {_idrankspecies};
                     """
         #execute the query
         return self.db_execute_sql(sql_query)
@@ -351,8 +385,15 @@ class PN_dbTaxa:
 
             query.finish()
             del query
-    
+        #ensure that the key is in lowercase (error and nothin if numerci)
+        try:
+            key = key.lower()
+        except:
+            pass
     #return for the rank (key), the dictionary and field value if field is not None
+        if key == "all":
+            return self.rank_typology.copy()
+
         if key in self.rank_typology:
             if field_name is None:
                 return self.rank_typology[key].copy()
@@ -421,15 +462,16 @@ class PN_dbTaxa:
     def db_get_valid_merges (self, id_taxonref):
         """DBASE: Returns a dictionary {"name": id_taxonref} of valid sibling taxa for merging taxa based on their rank"""
             #ex: return {'Acorales': 17056, 'Alismatales': 17057, 'Amborellales': 16183,...}, when searching for a order
+        _idrankspecies = self.db_get_rank('species', 'id_rank')
         sql_query = f"""
                     SELECT
                     n.taxaname, n.id_taxonref
                     FROM taxonomy.taxa_names n
                     JOIN taxonomy.taxa_reference r ON r.id_taxonref = {id_taxonref}
                     WHERE
-                        (r.id_rank < 21 AND n.id_rank = r.id_rank)
+                        (r.id_rank < {_idrankspecies} AND n.id_rank = r.id_rank)
                         OR
-                        (r.id_rank >= 21 AND n.id_rank >= 21)
+                        (r.id_rank >= {_idrankspecies} AND n.id_rank >= {_idrankspecies})
                     ORDER BY n.taxaname;
                     """
         #execute the query
@@ -545,6 +587,7 @@ class PN_dbTaxa:
         return json_list
     
     def db_get_taxa_wfo(self, filter_name = None):
+
         """DBASE: Returns a list of taxa-dictionary (dict_taxa) associated with wfo and potentially filtered by a taxaname (basename, group or clade))"""
         # the list of children from taxonomy.taxa_wfo, each item is a dictionary(id, taxaname, authors, rank, id_parent)
         table_taxa = []
@@ -599,7 +642,7 @@ class PN_dbTaxa:
 
                 """
         #execute the query
-        query = functions.db().exec(sql_query)
+        query = db().exec(sql_query)
         while query.next():
             item = {
                 "id": query.value("id"),
@@ -609,7 +652,7 @@ class PN_dbTaxa:
                 "basename": query.value("basename"),
                 "parentname": query.value("parent"),
                 "authors": query.value("authors"),
-                "rank": functions.dbtaxa().db_get_rank(query.value("id_rank"), "rank_name"),
+                "rank": dbtaxa().db_get_rank(query.value("id_rank"), "rank_name"),
                 "published" : True,
                 "accepted" : True,
                 "autonym" : False,
@@ -625,8 +668,11 @@ class PN_dbTaxa:
             #ex: [{"id_taxonref":integer, "id_parent":integer, "id_rank" :integer, "taxaname":text, "authors":text, "published":boolean, "accepted":boolean, 
             #     "taxaname_score":numeric, "authors_score":numeric"}, ...]
         #refresh (inactif) -> only return childs of idtaxonref impacted by a name change (avoid refresh all childs of a rank but only those linked by name combination)
+        _idrankspecies = self.db_get_rank('species', 'id_rank')
+        _idrankorder = self.db_get_rank('order', 'id_rank')
+
         sql_where_taxa = ''
-        tab_sql = ["id_rank >= 21"]
+        tab_sql = [f"id_rank >= {_idrankspecies}"]
         base_taxa = 'all_taxa'
         sql_inner_join_taxa =''
 
@@ -636,9 +682,7 @@ class PN_dbTaxa:
             if txt_search:
                 text_search = re.sub(r'[\*\%]', '', txt_search)
                 #return a sql statement for searching taxanames
-                #sql_taxa_searchNames = f"SELECT id_taxonref FROM taxonomy.pn_taxa_searchname ('%{text_search}%')"
-
-                sql_where_taxa = f"""\na.id_taxonref IN (SELECT id_taxonref FROM taxonomy.pn_taxa_searchname ('%{text_search}%'))"""
+                sql_where_taxa = f"""\nc.id_taxonref IN (SELECT id_taxonref FROM taxonomy.pn_taxa_searchname ('%{text_search}%'))"""
                 tab_sql.append(sql_where_taxa)
                 
             #2) properties filter: sql_where_taxa from the PN_trview_filter (get the dict_user properties=
@@ -673,49 +717,91 @@ class PN_dbTaxa:
             if clade_sql:
                 base_taxa = 'apg_taxa'
         
-        #5) create query: set the final sql_query, including sql_where_taxa and sql_join
-        sql_where_taxa = f" WHERE id_rank = {grouped_idrank} OR (" + " AND ".join(tab_sql) + ")"
+        # #5) create query: set the final sql_query, including sql_where_taxa and sql_join
+        # sql_where_taxa = f" WHERE id_rank = {grouped_idrank} OR (" + " AND ".join(tab_sql) + ")"
+        # sql_query = f"""
+        # WITH 
+        #     order_apg AS 
+        #         (SELECT DISTINCT
+        #             b.id_taxonref AS id_order,
+        #             taxonomy.pn_taxa_getparent(b.id_taxonref, {grouped_idrank}) AS id_parent --to change
+        #         FROM taxonomy.taxa_wfo a
+        #         INNER JOIN taxonomy.taxa_reference b ON lower(a.basename) = b.basename
+        #         WHERE b.id_rank = {_idrankorder} 
+        #         AND a.major_plant_group = '{clade_sql}'
+        #         OR a.clade_apg = '{clade_sql}'
+        #         ),
+        #     all_taxa AS            
+        #         (SELECT a.id_taxonref, id_rank,
+        #         	CASE WHEN id_rank >={_idrankspecies} THEN taxonomy.pn_taxa_getparent(a.id_taxonref, {grouped_idrank})
+        #         	     ELSE id_parent
+        #         	END
+        #         	AS id_parent
+        #             FROM taxonomy.taxa_reference a
+        #             {sql_inner_join_taxa}
+        #             {sql_where_taxa}
+        #         ),
+        #     apg_taxa AS
+        #         (SELECT DISTINCT a.id_taxonref, a.id_parent, a.id_rank
+        #             FROM all_taxa a
+        #             LEFT JOIN order_apg b ON a.id_taxonref = b.id_parent
+        #             LEFT JOIN order_apg c ON taxonomy.pn_taxa_getparent(a.id_taxonref, {_idrankorder}) = c.id_order
+        #             WHERE c.id_order IS NOT NULL OR b.id_parent IS NOT NULL
+        #         ),
+        #     score_taxa AS 
+        #         (SELECT 
+        #             a.id_taxonref, b.id_parent, a.id_rank,
+        #             a.taxaname, a.authors, a.published, a.accepted,
+        #             (a.metadata->'score'->>'taxaname_score')::numeric AS taxaname_score,
+        #             (a.metadata->'score'->>'authors_score')::numeric AS authors_score
+        #             FROM {base_taxa} b
+        #             INNER JOIN taxonomy.taxa_names a ON a.id_taxonref = b.id_taxonref
+        #             ORDER BY taxaname
+        #             )
+        #     SELECT json_agg(row_to_json(score_taxa)) FROM score_taxa;
+        # """
+
+        sql_where_taxa = f" WHERE (" + " AND ".join(tab_sql) + ")"
+
         sql_query = f"""
         WITH 
-            order_apg AS 
-                (SELECT DISTINCT
-                    b.id_taxonref AS id_order,
-                    taxonomy.pn_taxa_getparent(b.id_taxonref, {grouped_idrank}) AS id_parent --to change
-                FROM taxonomy.taxa_wfo a
-                INNER JOIN taxonomy.taxa_reference b ON lower(a.basename) = b.basename
-                WHERE b.id_rank = 8 
-                AND a.major_plant_group = '{clade_sql}'
-                OR a.clade_apg = '{clade_sql}'
-                ),
-            all_taxa AS            
-                (SELECT a.id_taxonref, id_rank,
-                	CASE WHEN id_rank >=21 THEN taxonomy.pn_taxa_getparent(a.id_taxonref, {grouped_idrank})
-                	     ELSE id_parent
-                	END
-                	AS id_parent
-                    FROM taxonomy.taxa_reference a
-                    {sql_inner_join_taxa}
-                    {sql_where_taxa}
-                ),
-            apg_taxa AS
-                (SELECT DISTINCT a.id_taxonref, a.id_parent, a.id_rank
-                    FROM all_taxa a
-                    LEFT JOIN order_apg b ON a.id_taxonref = b.id_parent
-                    LEFT JOIN order_apg c ON taxonomy.pn_taxa_getparent(a.id_taxonref, 8) = c.id_order
-                    WHERE c.id_order IS NOT NULL OR b.id_parent IS NOT NULL
-                ),
-            score_taxa AS 
-                (SELECT 
-                    a.id_taxonref, b.id_parent, a.id_rank,
-                    a.taxaname, a.authors, a.published, a.accepted,
-                    (a.metadata->'score'->>'taxaname_score')::numeric AS taxaname_score,
-                    (a.metadata->'score'->>'authors_score')::numeric AS authors_score
-                    FROM {base_taxa} b
-                    INNER JOIN taxonomy.taxa_names a ON a.id_taxonref = b.id_taxonref
-                    ORDER BY taxaname
-                    )
-            SELECT json_agg(row_to_json(score_taxa)) FROM score_taxa;
+        ranked AS 
+            (SELECT a.id_taxonref, a.id_parent
+            FROM taxonomy.taxa_reference a
+            WHERE id_rank = {grouped_idrank}
+            ),            
+        children AS
+            (SELECT b.id_taxonref, a.id_taxonref AS id_parent
+            FROM ranked a,
+            taxonomy.pn_taxa_childs(a.id_taxonref) b
+            INNER JOIN taxonomy.taxa_reference c ON b.id_taxonref = c.id_taxonref
+            --WHERE c.id_rank >=20
+            {sql_where_taxa}
+            ),
+        all_taxa AS 
+            (SELECT * FROM ranked
+            UNION ALL
+            SELECT * FROM children),
+        score_taxa AS            
+            (SELECT 
+                s.id_taxonref,
+                s.id_parent,
+                n.id_rank,
+                n.taxaname,
+                n.authors,
+                n.published,
+                n.accepted,
+                (n.metadata->'score'->>'taxaname_score')::numeric AS taxaname_score,
+                (n.metadata->'score'->>'authors_score')::numeric AS authors_score
+            FROM all_taxa s
+            JOIN taxonomy.taxa_names n     
+            ON n.id_taxonref = s.id_taxonref)
+            
+        SELECT json_agg(row_to_json(score_taxa)) FROM score_taxa;
+
         """
+
+
         #execute the query
         result = self.db.exec (sql_query)
         json_list = [] #if no result, return empty json_list 
@@ -774,10 +860,11 @@ class PN_dbTaxa:
 
         # sql_where = ''
         # create the SQL query to get the hierarchy of taxa
+        _idrankgenus = self.db_get_rank('genus', 'id_rank')
         sql_query = f"""WITH get_idtaxonref AS 
                             (SELECT 
                                 CASE WHEN
-                                    id_rank >14 THEN taxonomy.pn_taxa_getparent(id_taxonref, 14)
+                                    id_rank >{_idrankgenus} THEN taxonomy.pn_taxa_getparent(id_taxonref, {_idrankgenus})
                                 ELSE id_taxonref END
                                 FROM taxonomy.taxa_reference tr 
                                 WHERE id_taxonref = {id_taxonref}
@@ -848,7 +935,8 @@ class PN_dbTaxa:
 
     def db_get_properties_count (self, id_taxonref):
         """DBASE: Returns a JSON aggregate (dictionary of subdictionaries) from the properties of the (jsonb) field of the children of id_taxonref"""
-        #returns json only for taxa >= species (id_rank >= 21)
+        #returns json only for taxa >= species
+        _idrankspecies = self.db_get_rank('species', 'id_rank')
         sql_query = f"""
             WITH childs_taxaname AS 
                 (
@@ -856,7 +944,7 @@ class PN_dbTaxa:
                     FROM 
                     taxonomy.pn_taxa_childs({id_taxonref}) a
                     INNER JOIN taxonomy.taxa_reference b ON a.id_taxonref = b.id_taxonref
-                    WHERE b.id_rank >=21
+                    WHERE b.id_rank >={_idrankspecies}
                     AND b.properties IS NOT NULL 
                 )
                 SELECT jsonb_object_agg(key, fields) AS json_result
@@ -965,7 +1053,7 @@ class PN_dbTaxa:
         if _parentname:# get the id_parent from the parentname
             _parentname = _parentname.strip().lower() #.replace(' ', '')
             sql_update = f"""(SELECT 
-                                taxonomy.pn_taxa_edit ({idtaxonref}, '{basename}', '{authors}', taxa.id_parent, {idrank}, {published},{accepted}) AS id_taxonref 
+                                taxonomy.pn_taxa_edit ({idtaxonref}, '{basename}', '{authors}', taxa.id_parent, {idrank}, {published}, {accepted}) AS id_taxonref 
                             FROM
                                 (SELECT 
                                     a.id_taxonref AS id_parent

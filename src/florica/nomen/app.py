@@ -13,10 +13,12 @@ import sys
 # Standard library
 import json
 import re
+from threading import Thread
+from queue import Queue
 import time
 # Third-party
 from PyQt5 import QtCore, QtGui, QtWidgets
-from florica.core import resources  # noqa: F401
+from florica.core import resources, wfo_graphsql  # noqa: F401
 #import taxa_occ.core.ressources
 
 # Internal modules
@@ -33,13 +35,13 @@ from florica.core import database
 
 #generic function to access to the dbases classes
 #access to the postgresql connexion
-def db_postgres():
-    """DBASE: returns the instance of the open db connexion (DatabaseConnection)"""
-    return database.db()
+# def db_postgres():
+#     """DBASE: returns the instance of the open db connexion (DatabaseConnection)"""
+#     return database.db()
 #access to a postgres connexion with specific procedures for taxa management
-def db_taxa():
-    """DBASE: returns the instance of the open dbtaxa connexion (PN_dbTaxa)"""
-    return database.dbtaxa()
+# def database.dbtaxa():
+#     """DBASE: returns the instance of the open dbtaxa connexion (PN_dbTaxa)"""
+#     return database.dbtaxa()
 
 #Class _EditProperties_Delegate is used by the MainWindow class to edit the properties of the PN_JsonQTreeView
 class _EditProperties_Delegate(QtWidgets.QStyledItemDelegate):
@@ -503,6 +505,19 @@ class MainWindowController:
         self.proxy_model.setSortCaseSensitivity(QtCore.Qt.CaseInsensitive)
         self.trview_taxonref.setModel(self.proxy_model)
         
+        self.synonym_queue = Queue()
+
+        self.worker = Thread(
+            target=self.synonym_worker,
+            daemon=True
+        )
+        self.worker.start()
+
+
+
+
+
+        
         #create the metadata worker (Qthread)
         self.metadata_worker = PNTaxa_searchAPI(view)
 
@@ -538,7 +553,7 @@ class MainWindowController:
         self.trview_names.selectionModel().selectionChanged.connect(self.refresh_ui_trview_hierarchy)
         self.trview_properties.changed_signal.connect(self.refresh_ui_buttons_properties)
         
-        self.metadata_worker.Result_Signal.connect(self.trview_metadata_setDataAPI)
+        self.metadata_worker.api_signal.connect(self.trview_metadata_setDataAPI)
         #self.combo_taxa.currentIndexChanged.connect(self.trview_taxonref_setData)
         self.dbwidget.clicked.connect(self.on_status_clicked)
 
@@ -547,7 +562,6 @@ class MainWindowController:
    #load themes menu
         button_themes_menu = QtWidgets.QMenu()
         menu_items = ["Adaptic", "Combinear", "Diffnes", "Geoo", "Lightstyle", "Obit"]
-
         for item in menu_items:
             action = QtWidgets.QAction(item, self.view)
             action.triggered.connect(lambda checked, item=item: self.on_menu_theme_clicked(item))
@@ -559,8 +573,18 @@ class MainWindowController:
         action_group = QtWidgets.QActionGroup(self.view)
         action_group.setExclusive(True)
         actions = []
+
+        self.database_open()
         # set the list of the available ranks
-        menu_items = ['Subregnum','Division', 'Classis', 'Subclassis', 'Order', 'Family', 'Genus']
+        dict_ranks = database.dbtaxa().db_get_rank ("all")
+        numeric_keys = sorted(k for k in dict_ranks if isinstance(k, int))
+        # create the menu
+        menu_items = []
+        for key in numeric_keys:
+            if dict_ranks[key]["rank_name"] == 'species':
+                break
+            menu_items.append(dict_ranks[key]["rank_name"].capitalize())
+            
         for item in menu_items:
             action = QtWidgets.QAction(item, self.view)
             action.setCheckable(True)
@@ -570,10 +594,12 @@ class MainWindowController:
             menu_button_rankGroup.addAction(action)
         #set the family as default selected item
         self.view.button_rankgroup.setMenu(menu_button_rankGroup)
-        _selected_item = 5
+        _selected_item = menu_items.index("Family")
         actions[_selected_item].setChecked(True)
         #self.view.set_rankgroup_text(menu_items[_selected_item])
         self.view.button_rank_text = menu_items[_selected_item]
+        
+        self.trview_taxonref_setData()
 
     @property
     def trview_taxonref_selectedItem(self):
@@ -601,7 +627,7 @@ class MainWindowController:
     def selectedIdrank(self):
         """GUI: Returns the selected id_rank from the UI (button_rankGroup)"""
         group_text = self.view.button_rank_text
-        idrankparent = db_taxa().db_get_rank(group_text, 'id_rank')
+        idrankparent = database.dbtaxa().db_get_rank(group_text, 'id_rank')
         if not idrankparent:
             idrankparent = 14 
         return idrankparent
@@ -611,7 +637,7 @@ class MainWindowController:
         """
         GUI: Returns a dictionary of filters (db_dic_filter) from the UI (combo_taxa and trview_filter filters)
         """
-        dict_filter = db_taxa().db_dic_filter
+        dict_filter = database.dbtaxa().db_dic_filter
         #dict_filter["nb_filter"] = 0
         if self.combo_taxa.currentIndex() == -1:
             self.combo_taxa.setCurrentIndex(0)
@@ -656,7 +682,7 @@ class MainWindowController:
                 "color: rgb(0, 55, 217);" if nb_filter else ""
         )
         #get the list of taxa resulting from a query in the database
-        records = db_taxa().db_get_json_taxa(self.selectedIdrank, dict_filter)
+        records = database.dbtaxa().db_get_json_taxa(self.selectedIdrank, dict_filter)
         data = []
         #create the list of PNTaxa
         for rec in records:
@@ -668,6 +694,27 @@ class MainWindowController:
             item.authors_score = rec.get("authors_score", None)
             data.append(item)
         return data
+
+
+    def synonym_worker(self):
+        while True:
+            concept_id, id_taxonref = self.synonym_queue.get()
+            synonyms = wfo_graphsql.get_wfo_synonyms(concept_id)
+            ls_synonyms = synonyms["match"]
+            names = list(dict.fromkeys(
+                term.strip()
+                for d in ls_synonyms
+                for term in (d["taxaname"], d["taxonref"])
+                if term
+            ))
+            result = database.dbtaxa().db_add_synonyms(id_taxonref, names)
+            
+
+            #self.insert_synonyms(id_taxonref, synonyms)
+            #print ("insert synonyms", result)
+
+            self.synonym_queue.task_done()
+
 
     def on_button_filter_clicked(self, state: bool):
         """GUI : hide/show filter Frame according to the state of the button_showFilter"""
@@ -740,7 +787,7 @@ class MainWindowController:
         database._registry = None
         database.init_registry(database.ServiceRegistry(self.dbwidget, taxa=taxa))
     #set the APG options into self.combo_taxa
-        lst = db_taxa().db_get_clades()
+        lst = database.dbtaxa().db_get_clades()
         for clade in lst:
             self.combo_taxa.addItem(clade)
             self.combo_taxa.setItemData(self.combo_taxa.count() - 1, PNTaxa(0, clade), role=QtCore.Qt.UserRole)
@@ -761,7 +808,7 @@ class MainWindowController:
         self.refresh_ui_trview_taxonref(True)
     #initialize the trview_taxonref (list of taxa)
         self.trview_filter_load()
-        self.trview_taxonref_setData()
+        #self.trview_taxonref_setData()
 
 
     def signal_combo_taxa (self, connected = True):
@@ -780,10 +827,11 @@ class MainWindowController:
     def combo_taxa_selectedItem(self, selecteditem):
         """GUI: Select item into the combo_taxa (add if necessary)"""
         index = -1
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
         #disconnect the signal
         self.signal_combo_taxa(False)
         self.combo_taxa.setCurrentIndex(index)
-        if selecteditem.id_rank >= 21:
+        if selecteditem.id_rank >= _idrankspecies:
             return
         #search for the item in the combo
         for i in range (self.combo_taxa.count()):
@@ -869,10 +917,11 @@ class MainWindowController:
 
     def trview_properties_setData(self):
         """GUI: Load the set of properties to selectedItem from database"""
+        _idrankspecies = database.dbtaxa().db_get_rank ("species", "id_rank")
         if self.selectedItem is None:
             return
         self.view.button_properties.setVisible(False)
-        if self.selectedItem.id_rank < 21:
+        if self.selectedItem.id_rank < _idrankspecies:
             identity_data = self.selectedItem.json_properties_count
             self.trview_properties.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
             self.trview_properties.tab_header = ["Property", "Taxa count"]
@@ -914,8 +963,8 @@ class MainWindowController:
         if tab_result:
             _properties = json.dumps(tab_result)
         #send the json to the database
-        if not db_taxa().db_update_properties (id_taxonref, _properties):
-            msg = db_postgres().postgres_error()
+        if not database.dbtaxa().db_update_properties (id_taxonref, _properties):
+            msg = database.db().postgres_error()
             MessageBox().information_msgbox("Error", msg, True)
 
     def on_trview_hierarchy_clicked(self):  
@@ -968,7 +1017,7 @@ class MainWindowController:
                         dict_taxa = {}
                         dict_taxa["names"] = [taxa]
                     for value in dict_taxa["names"]:
-                        if db_taxa().db_add_synonym(_selecteditem.id_taxonref, value, 'Homotypic'):
+                        if database.dbtaxa().db_add_synonym(_selecteditem.id_taxonref, value, 'Homotypic'):
                             new_synonyms += 1
                 #refresh the tab names for the current selecteditem if newsynonyms
                 if new_synonyms > 0 and self.selectedItem == _selecteditem:
@@ -977,7 +1026,7 @@ class MainWindowController:
 
         #update metadata
             _data_list = json.dumps(api_json)
-            db_taxa().db_update_metadata (_selecteditem.id_taxonref, _data_list)
+            database.dbtaxa().db_update_metadata (_selecteditem.id_taxonref, _data_list)
 
             if "score" in api_json:
                 dict_score = api_json["score"]
@@ -1082,7 +1131,7 @@ class MainWindowController:
     #     print ('longueur de la liste à rafraichir, ',len(items_to_update))
     #     print ('longueur de la liste à remove, ',len(items_toremove))
     #     #get the id_taxonref childs from the  to remove in the model
-    #     items_toremove = db_taxa().db_get_childs(items_toremove)
+    #     items_toremove = database.dbtaxa().db_get_childs(items_toremove)
     #     #remove nodes in the model
     #     for item in items_toremove:
     #         model.removeItem(item)
@@ -1140,8 +1189,8 @@ class MainWindowController:
         #refresh the visibility of items according to the proxy filter (cf. checkboxes : populated, checked, published, accepted)
         self.trview_taxonref_refreshData()
         #ajust trview_taxonref column width
-        total_width = self.trview_taxonref.viewport().width()
-        self.trview_taxonref.setColumnWidth(0, int(total_width * 2 / 3))
+        total_width = self.window.width() #self.trview_taxonref.viewport().width()
+        self.trview_taxonref.setColumnWidth(0, int(total_width/3)) #int(total_width * 2 / 3))
 
 
     def trview_taxonref_refreshData(self, value = None):
@@ -1214,7 +1263,7 @@ class MainWindowController:
             return
 
         #delete is confirmed
-        ls_todelete = db_taxa().db_delete_reference(self.selectedItem.id_taxonref)
+        ls_todelete = database.dbtaxa().db_delete_reference(self.selectedItem.id_taxonref)
         if ls_todelete: #not result.lastError().isValid():
             #refresh the model and combo_taxa
             try:
@@ -1250,7 +1299,7 @@ class MainWindowController:
                 if idtaxonref == from_idtaxonref:
                     return
                 # execute the merge into the database
-                if db_taxa().db_merge_reference(from_idtaxonref, idtaxonref, category):
+                if database.dbtaxa().db_merge_reference(from_idtaxonref, idtaxonref, category):
                     #reset the id of PN_trview_names to force refresh (toolbox trigger by self.trview_hierarchy)
                     self.trview_names.id = 0
                     self.trview_metadata.id = 0
@@ -1275,7 +1324,7 @@ class MainWindowController:
                         self.trview_hierarchy.setdata (selecteditem, idtaxonref)
                         selecteditem.id_rank = save_idrank
                 else:
-                    msg = db_postgres().postgres_error()
+                    msg = database.db().postgres_error()
                     MessageBox().information_msgbox("Error", msg, True)
         except Exception:
             return
@@ -1364,10 +1413,10 @@ class MainWindowController:
             return
         
         #delete into the database
-        if db_taxa().db_delete_synonym(_currentsynonym):
+        if database.dbtaxa().db_delete_synonym(_currentsynonym):
             self.trview_names_setData()
         else:
-            msg = db_postgres().postgres_error()
+            msg = database.db().postgres_error()
             MessageBox().information_msgbox("Error", msg, True)
         #refresh the ui buttons associated to trview_names
         self.refresh_ui_buttons_names()
@@ -1375,25 +1424,25 @@ class MainWindowController:
 
     def apply_add_synonym(self, id_taxonref, new_synonym, new_category):
         """GUI: Add the new synonym and refresh the list of names"""
-        if db_taxa().db_add_synonym(id_taxonref, new_synonym, new_category):
+        if database.dbtaxa().db_add_synonym(id_taxonref, new_synonym, new_category):
             #self.window.sender().Qline_name.setText('')
             #self.window.sender().myPNSynonym.category = new_category
             self.window.sender().myPNSynonym.synonym = ''
             self.window.sender().refresh()
             self.trview_names_setData()
         else:
-            msg = db_postgres().postgres_error()
+            msg = database.db().postgres_error()
             MessageBox().information_msgbox("Error", msg, True)
         
     def apply_edit_synonym(self, synonym, new_synonym, new_category):
         """GUI: Update the modified version of the synonym and refresh the list of names"""
-        if db_taxa().db_edit_synonym(synonym, new_synonym, new_category):
+        if database.dbtaxa().db_edit_synonym(synonym, new_synonym, new_category):
             self.window.sender().myPNSynonym.synonym = new_synonym
             self.window.sender().myPNSynonym.category = new_category
             self.window.sender().refresh()
             self.trview_names_setData()
         else:
-            msg = db_postgres().postgres_error()
+            msg = database.db().postgres_error()
             MessageBox().information_msgbox("Error", msg, True)
 
 
@@ -1415,14 +1464,19 @@ class MainWindowController:
         ls_item_updated = []
         #save any dict from the list
         for dict_tosave in ls_dict_tosave:
-            idtaxonref_torefresh  = db_taxa().db_save_dict_taxa(dict_tosave)
+            idtaxonref_torefresh  = database.dbtaxa().db_save_dict_taxa(dict_tosave)
             _idrank = dict_tosave.get("id_rank", 0)
             if idtaxonref_torefresh :
                 ls_item_updated.append(idtaxonref_torefresh)
                 #ensure to update the id_taxonref in the dict_tosave
                 dict_tosave["id_taxonref"] = idtaxonref_torefresh
+
+                if dict_tosave.get ("add_synonym", False):
+                    concept_id = dict_tosave.get("id", None)
+                    self.synonym_queue.put((concept_id, idtaxonref_torefresh))
+
             else:
-                msg = db_postgres().postgres_error()
+                msg = database.db().postgres_error()
                 MessageBox().information_msgbox("Error", msg, True)
         
         #refresh UI if updated (tlview_taxonref and trview_hierarchy)
@@ -1573,7 +1627,7 @@ class MainWindowController:
         """GUI: Open the main UI (mainwindow)"""
         self.on_menu_theme_clicked (self.config_manager.theme)
         self.window.show()
-        self.database_open()
+        #self.database_open()
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

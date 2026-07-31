@@ -80,6 +80,8 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         _validate(): Compares the original data with the current data in the tree view and emits a signal if they are different.
     """
     changed_signal  = pyqtSignal(bool)
+
+#internal functions    
     def __init__(self, checkable = False, list_inRows = False, header = None):
         super().__init__()
         self.tab_header = header
@@ -95,17 +97,6 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         self.list_inRows = list_inRows
         self.header().setDefaultAlignment(Qt.AlignCenter)
         self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-
-    # def clear (self):
-    #     model = QtGui.QStandardItemModel()
-    #     self.setModel(model)
-
-    def refresh(self):
-        self.setData(self.dict_db_properties)
-
-    def changed (self):
-    #test the equality between the db and user tab properties
-        return (self.dict_db_properties != self.dict_user_properties())
 
     def _validate(self, index = None):
     #test if changed, underline column 0 for changed value and emit a signal
@@ -124,9 +115,22 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         self.changed_signal.emit(self.changed())
 
 
+    # def clear (self):
+    #     model = QtGui.QStandardItemModel()
+    #     self.setModel(model)
+
+#external functions
+    def refresh(self):
+        """refresh the treeview with the json data"""
+        self.setData(self.dict_db_properties)
+
+    def changed (self):
+        """check if treeview changed from initial json_data"""
+        return (self.dict_db_properties != self.dict_user_properties())
 
     def setData(self, json_data = None):
-    #set the json_data into the treeview model
+        """set the json_data into the treeview model"""
+
         def _set_dict_properties (item_base, _dict_item):
         #internal function to set recursively add the data into the treeview model
             if _dict_item is None : 
@@ -195,7 +199,7 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         self.model().dataChanged.connect(self._validate)
 
     def dict_user_properties(self, item_base = None):
-    #get the json_data from the treeview model (with changed values)
+        """Get the json_data from the treeview model (with values changed by user)"""
         tab_value = {}
         if item_base is None:
             item_base = self.model()
@@ -218,8 +222,9 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
 
 
 
-
-
+##################################################################################
+######### Standardized Dialogs box ###############################################
+##################################################################################
 class MessageBox(QtWidgets.QMessageBox):
     """
     A custom message box widget with custom icons and messages
@@ -300,6 +305,9 @@ class MessageBox(QtWidgets.QMessageBox):
         
 
 
+##################################################################################
+######### Manager of user preferences (cf. config.ini)    ########################
+##################################################################################
 class ConfigManager:
     """
     The main class for managing configuration settings in the config_path.
@@ -359,6 +367,9 @@ class ConfigManager:
 
 
 
+##################################################################################
+######### Manager of Postgresql configuration ####################################
+##################################################################################
 class PostgresConfigDialog(QtWidgets.QDialog):
     """
         A Qt Dialog to configure, test and load the PostgreSQL connection

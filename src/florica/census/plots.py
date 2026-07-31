@@ -16,7 +16,7 @@ from models.occ_model import PN_taxa_resolution_model
 from models.taxa_model import PNSynonym, PN_TaxaSearch
 from core.widgets import PN_JsonQTreeView, PN_dbTaxa , PN_DatabaseConnect
 from core.functions import (get_str_value, get_all_names, get_reference_field, postgres_error, dict_db_fields, 
-                           flower_reg_pattern, fruit_reg_pattern, AppContext, init_context
+                           AppContext, init_context
                            )
 ########################################
 
@@ -28,6 +28,10 @@ DBASE_SCHEMA = 'plots'
 DBASE_SCHEMA_TAXONOMY = 'taxonomy'
 DBASE_SCHEMA_TREES = DBASE_SCHEMA + '.trees'
 DBASE_SCHEMA_PLOTS = DBASE_SCHEMA + '.plots'
+
+flower_reg_pattern = r'fl\.*|bt\.*|boutons?|cauliflor(e|a|ous)?|fert(?:ile|\.|)|fleurs?|inflorescences?|flowers?|buttons?|inflos?'
+fruit_reg_pattern = r'fr\.*|figues?|fruits?|c[ôo]nes?|graines?|seeds?|figs?'
+
 
 #structure of the trees/plots tables, based on dict_db_fields
 #field_name :{value, type, items, translate, unit, decimal, min, max, editable, enabled, tip, details, synonyms}
