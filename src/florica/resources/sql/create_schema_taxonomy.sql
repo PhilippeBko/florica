@@ -1088,6 +1088,7 @@ VALUES
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT taxa_reference_pk PRIMARY KEY (id_taxonref);
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT taxa_reference_un UNIQUE (basename, id_parent);
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT id_parent_fk FOREIGN KEY (id_parent) REFERENCES taxonomy.taxa_reference(id_taxonref) ON UPDATE CASCADE ON DELETE CASCADE;
+
 	--ALTER TABLE taxonomy.taxa_reference DROP CONSTRAINT IF EXISTS id_rank_fk CASCADE;
 	ALTER TABLE taxonomy.taxa_reference ADD CONSTRAINT id_rank_fk FOREIGN KEY (id_rank) REFERENCES taxonomy.taxa_rank(id_rank);
 	
@@ -1109,6 +1110,7 @@ VALUES
 --add indexes
 	--DROP INDEX IF EXISTS taxonomy.ux_basename_rank_partial;
 	CREATE UNIQUE INDEX ux_basename_rank_partial ON taxonomy.taxa_reference (basename) WHERE id_rank < 20;
+	CREATE INDEX taxa_reference_id_parent_idx ON taxonomy.taxa_reference(id_parent);
 
 
 

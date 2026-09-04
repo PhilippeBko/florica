@@ -996,6 +996,59 @@ $function$;
 COMMENT ON FUNCTION taxonomy.pn_taxa_parents(INTEGER, BOOLEAN) IS 'Return a table with parents taxa for the input idtaxonref, including the idtaxonref itself (included is True)';
 
 
+
+-----------------------------------------------------------------------------------------------
+---#Return a table including the parent and children idtaxonref with id_rank for a list of id_taxonref
+------------------------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION taxonomy.pn_taxa_hierarchy (
+	ids integer[]
+	)
+RETURNS TABLE(
+ 	id_taxonref		INTEGER,
+ 	id_parent		INTEGER
+	)
+LANGUAGE sql
+AS $function$ 
+		WITH RECURSIVE 
+		seed AS (
+		    SELECT
+		        id_taxonref,
+		        id_parent
+		    FROM taxonomy.taxa_reference
+		    WHERE id_taxonref = ANY(ids)
+		    ),
+		parents AS (
+			SELECT * FROM seed
+		    UNION ALL
+		    SELECT
+		        t.id_taxonref,
+		        t.id_parent
+		    FROM taxonomy.taxa_reference t
+		    JOIN parents p
+		      ON t.id_taxonref = p.id_parent
+		),
+		childs AS (
+		
+		    SELECT * FROM seed 
+		    UNION ALL
+		    SELECT
+		        t.id_taxonref,
+		        t.id_parent
+		    FROM taxonomy.taxa_reference t
+		    JOIN childs c
+		      ON t.id_parent = c.id_taxonref
+		)
+		
+		SELECT *
+		FROM parents
+		UNION
+		SELECT *
+		FROM childs;
+
+$function$;
+COMMENT ON FUNCTION taxonomy.pn_taxa_hierarchy (INTEGER[]) IS 'Returns parents and children of an array of id_taxonref'
+;
+
 -----------------------------------------------------------------------------------------------
 ---#Return a table with auto-generated names from taxonomy.taxa_reference (category 1 to 4)
 ---restricted to id_taxonref and childs (Default = NULL - all the nameset)
@@ -1085,7 +1138,7 @@ RETURN QUERY
 				WHERE a.id_rank IN (15, 16, 17, 18, 19)
 		),
 		ls_autonyms AS (--list of id_species to create autonyms (species with at least one infraspecific child)
-				SELECT taxonomy.pn_taxa_getparent(a.id_parent, 21) AS id_species, id_rank
+				SELECT taxonomy.pn_taxa_getparent(a.id_parent, 20) AS id_species, id_rank
 				FROM taxonomy.taxa_reference a
 				WHERE a.id_rank > 20 AND a.id_rank < 31
 				GROUP BY id_species,id_rank

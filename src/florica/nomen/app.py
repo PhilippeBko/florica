@@ -29,96 +29,10 @@ from florica.models.taxa_model import (
     PNTaxa_QTreeView, PNTaxa_add, PNTaxa_edit, PNTaxa_merge,
     PNSynonym, PNSynonym_edit
 )
-from florica.core.widgets import PN_JsonQTreeView, HyperLinkDelegate, PostgresConfigDialog, load_ui_from_resources, MessageBox, ConfigManager   #, PN_DatabaseStatusWidget
+from florica.core.widgets import (PN_JsonQTreeView, HyperLinkDelegate, PostgresConfigDialog, MessageBox, ConfigManager, 
+                                  load_ui_from_resources, setup_theme_menu, set_theme)   #, PN_DatabaseStatusWidget
 #from florica.core.database import DatabaseConnection, PN_dbTaxa
 from florica.core import database
-
-#generic function to access to the dbases classes
-#access to the postgresql connexion
-# def db_postgres():
-#     """DBASE: returns the instance of the open db connexion (DatabaseConnection)"""
-#     return database.db()
-#access to a postgres connexion with specific procedures for taxa management
-# def database.dbtaxa():
-#     """DBASE: returns the instance of the open dbtaxa connexion (PN_dbTaxa)"""
-#     return database.dbtaxa()
-
-#Class _EditProperties_Delegate is used by the MainWindow class to edit the properties of the PN_JsonQTreeView
-class _EditProperties_Delegate(QtWidgets.QStyledItemDelegate):
-    """
-    A custom delegate class for editing properties in a PN_JsonQTreeView.
-
-    This class is responsible for creating editors for specific columns in the tree view,
-    based on the type of data in the dict_properties dictionary (for the moment qlinedit and combobox)
-
-    Attributes:
-        None
-
-    Methods:
-        createEditor: Creates an editor (QLineEdit or QComboBox) for a specific column.
-        setEditorData: Sets the data for the editor.
-        setModelData: Saves the data from the editor into the model.
-    """
-    def __init__(self, dict_properties, parent=None):
-        super().__init__(parent)
-        self.db_properties = dict_properties
-
-    def createEditor(self, parent, option, index):
-        """ Create the editor (QlineEdit or ComboBox) according to type in the dict_properties         
-        """
-        if index.column() == 1:
-            #get the columns name and value
-            try:
-                field_table = index.parent().data(0).lower()
-                field_name = index.siblingAtColumn(0).data().lower()
-                field_value = index.siblingAtColumn(1).data()
-                field_def = self.db_properties[field_table][field_name]
-            except Exception:
-                field_def = None
-                return
-            if field_def is None : 
-                return
-            #do not edit value with brackets (convention)
-            if re.search(r'\[.*\]',field_value): 
-                return
-            _type = field_def.get("type", 'text')
-            _lsitems = field_def.get("items", None)
-            if _type == 'text' and _lsitems is None :
-                editor = QtWidgets.QLineEdit(parent)
-            else:
-                editor = QtWidgets.QComboBox(parent)
-                if _lsitems:
-                    editor.addItems(_lsitems)
-                elif _type == 'boolean':
-                    editor.addItems(['True', 'False'])
-                editor.addItems(['Unknown'])
-            return editor        
-        return
-
-    def setEditorData(self, editor, index):
-        """ Fill the editor with the model value"""
-        if index.column() == 1:
-            data = index.model().data(index, QtCore.Qt.DisplayRole)
-            if isinstance(editor, QtWidgets.QLineEdit):
-                editor.setText(str(data))
-            elif isinstance(editor, QtWidgets.QComboBox):
-                if not data:
-                    data = 'Unknown'
-                editor.setCurrentText(str(data))
-
-    def setModelData(self, editor, model, index):
-        """ Save the value into the model """
-
-        if index.column() == 1:
-            if isinstance(editor, QtWidgets.QLineEdit):
-                _value = editor.text()
-            elif isinstance(editor, QtWidgets.QComboBox):
-                _value = editor.currentText()
-                if _value == 'Unknown':
-                    _value = ''
-            # if model.data(index) != _value:
-            #     model.setData(index.siblingAtColumn(0), font, QtCore.Qt.FontRole)
-            model.setData(index, _value)
 
 #class _MetadataDelegateWithAuthorCheck is used to highlight the authors name in red if it does not match the current authors name
 #surcharging the HyperLinkDelegate used to highlight the hyperlinks in the metadata treeview
@@ -474,25 +388,6 @@ class MainWindowController:
         self.dbwidget = database.DatabaseConnection() #PN_DatabaseStatusWidget()
         self.window.statusBar().addPermanentWidget(self.dbwidget)
 
-        self.trview_properties =  PN_JsonQTreeView ()
-        layout = self.window.toolBox.widget(2).layout()
-        layout.insertWidget(0,self.trview_properties) 
-
-        self.trview_metadata = PN_JsonQTreeView ()
-        layout = self.window.toolBox.widget(1).layout()
-        layout.insertWidget(0,self.trview_metadata)
-
-        self.trview_names = PN_JsonQTreeView ()
-        layout = self.window.toolBox.widget(0).layout()
-        layout.insertWidget(0,self.trview_names)
-
-        self.trview_filter = PN_JsonQTreeView ()
-        layout = self.window.frame_filter.layout()
-        layout.insertWidget(1,self.trview_filter)
-
-        self.trview_hierarchy = PNTaxa_QTreeView ()
-        layout = self.window.trview_hierarchy_Layout
-        layout.insertWidget(0,self.trview_hierarchy)
         
         self.combo_taxa = view.combo_taxa
 
@@ -516,12 +411,58 @@ class MainWindowController:
 
 
 
+        self.database_open()
 
+    #set the APG options into self.combo_taxa
+        dict_clades = database.dbtaxa().db_get_clades()
+        lstclade = sorted(dict_clades.keys())
+        for clade in lstclade:
+            self.combo_taxa.addItem(clade, dict_clades[clade])
+            # self.combo_taxa.addItem(clade)
+            # self.combo_taxa.setItemData(self.combo_taxa.count() - 1, PNTaxa(0, clade), role=QtCore.Qt.UserRole)
+            
+        self.combo_taxa.setCurrentIndex(0)
+        
+        #set the delegate and slots signals
+    #reconnect the signal to combo_taxa
+        self.signal_combo_taxa(True)
+        #self.combo_taxa.currentIndexChanged.connect(self.trview_taxonref_setData)
+    #set the ui enabled for the general widgets 
+        self.refresh_ui_trview_taxonref(True)
+    #initialize the trview_taxonref (list of taxa)
+        #self.trview_taxonref_setData()
+        self.db_properties = database.dbtaxa().db_dic_properties
+
+        self.trview_properties =  PN_JsonQTreeView (dict_fieldDefs = self.db_properties)
+        layout = self.window.toolBox.widget(2).layout()
+        layout.insertWidget(0,self.trview_properties) 
+
+        self.trview_filter = PN_JsonQTreeView (dict_fieldDefs = self.db_properties)
+        layout = self.window.frame_filter.layout()
+        layout.insertWidget(1,self.trview_filter)
+
+        self.trview_metadata = PN_JsonQTreeView ()
+        layout = self.window.toolBox.widget(1).layout()
+        layout.insertWidget(0,self.trview_metadata)
+        self.trview_metadata.setItemDelegate(self.authors_delegate)
+
+        self.trview_names = PN_JsonQTreeView ()
+        layout = self.window.toolBox.widget(0).layout()
+        layout.insertWidget(0,self.trview_names)
+
+        self.trview_hierarchy = PNTaxa_QTreeView ()
+        layout = self.window.trview_hierarchy_Layout
+        layout.insertWidget(0,self.trview_hierarchy)
+        #set delegate for editing properties of PN_trview_identity & PN_trview_filter
+        
+        # delegate = _EditProperties_Delegate(self.db_properties)
+        # self.trview_properties.setItemDelegate(delegate)
+        # self.trview_filter.setItemDelegate(delegate)
+        # self.trview_properties.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
+        # self.trview_filter.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
         
         #create the metadata worker (Qthread)
         self.metadata_worker = PNTaxa_searchAPI(view)
-
-        self.trview_metadata.setItemDelegate(self.authors_delegate)
 
     #setting the slots signals
         #signals from menus clicked (theme and rank group)
@@ -558,15 +499,12 @@ class MainWindowController:
         self.dbwidget.clicked.connect(self.on_status_clicked)
 
         self.view.buttonbox_filter_apply.clicked.connect(self.trview_taxonref_setData)
-        self.view.buttonbox_filter_reset.clicked.connect(self.on_button_filter_reset_clicked)
-   #load themes menu
-        button_themes_menu = QtWidgets.QMenu()
-        menu_items = ["Adaptic", "Combinear", "Diffnes", "Geoo", "Lightstyle", "Obit"]
-        for item in menu_items:
-            action = QtWidgets.QAction(item, self.view)
-            action.triggered.connect(lambda checked, item=item: self.on_menu_theme_clicked(item))
-            button_themes_menu.addAction(action)
-        self.view.button_themes.setMenu(button_themes_menu)
+        self.view.buttonbox_filter_reset.clicked.connect(self._on_button_filter_reset_clicked)
+    #load themes menu
+        setup_theme_menu (
+            self.view.button_themes, 
+            self.config_manager
+        )
     #load the grouped ranks menu
         menu_button_rankGroup = QtWidgets.QMenu()
         # create an exclusive action group for menu
@@ -574,7 +512,9 @@ class MainWindowController:
         action_group.setExclusive(True)
         actions = []
 
-        self.database_open()
+
+        self.trview_filter_load()
+
         # set the list of the available ranks
         dict_ranks = database.dbtaxa().db_get_rank ("all")
         numeric_keys = sorted(k for k in dict_ranks if isinstance(k, int))
@@ -638,24 +578,18 @@ class MainWindowController:
         GUI: Returns a dictionary of filters (db_dic_filter) from the UI (combo_taxa and trview_filter filters)
         """
         dict_filter = database.dbtaxa().db_dic_filter
-        #dict_filter["nb_filter"] = 0
-        if self.combo_taxa.currentIndex() == -1:
-            self.combo_taxa.setCurrentIndex(0)
-        combo_taxa_index = self.combo_taxa.currentIndex()
-        #search for a selected idtaxonref into the combo_taxa
-        idtaxonref = self.combo_taxa.itemData(combo_taxa_index, role=QtCore.Qt.UserRole).idtaxonref
+        # if self.combo_taxa.currentIndex() == -1:
+        #     self.combo_taxa.setCurrentIndex(0)
+        #create the dict_filter composed with keys search_name, id_taxonref and properties
+        #key search_name
         if len(self.view.search_taxon) > 0:
             dict_filter["search_name"] = self.view.search_taxon
-            #dict_filter["nb_filter"] +=1
-        if idtaxonref == 0:
-            idtaxonref = None
-            if combo_taxa_index > 0:
-                #add the selected clade to the filter
-                dict_filter["clade"] = self.combo_taxa.currentText()
-        else:
-            dict_filter["id_taxonref"] = idtaxonref
-            #dict_filter["nb_filter"] +=1
-        #get the properties filter
+        #key id_taxonref
+        combo_taxa_index = self.combo_taxa.currentIndex()
+        if combo_taxa_index > 0:
+            #add the selected clade to the filter
+            dict_filter["id_taxonref"] = self.combo_taxa.currentData()
+        #key properties
         properties_filter = {}
         for key, value in self.trview_filter.dict_user_properties().items():
             for key2, value2 in value.items():
@@ -665,10 +599,8 @@ class MainWindowController:
                     properties_filter[key][key2] = value2
         if properties_filter:
             dict_filter["properties"] = properties_filter
-            #dict_filter["nb_filter"] +=1
+            #print (properties_filter)
         #send the complete dict_filter
-        #set the number of active filters, except clade
-        #dict_filter["nb_filter"] = sum(v is not None and k!="clade" for k, v in dict_filter.items())
         return dict_filter
 
 
@@ -677,7 +609,7 @@ class MainWindowController:
         """Return a list of objets (class PNTaxa_with_Score) from the database that match the selectedFilter"""
         #get the current filter
         dict_filter = self.selectedFilter
-        nb_filter = sum(v is not None and k!="clade" for k, v in dict_filter.items())
+        nb_filter = sum(v is not None and k!="id_taxonref" for k, v in dict_filter.items())
         self.view.button_showFilter.setStyleSheet(
                 "color: rgb(0, 55, 217);" if nb_filter else ""
         )
@@ -697,6 +629,7 @@ class MainWindowController:
 
 
     def synonym_worker(self):
+        """Add a thread to search for synonyms in WFO"""
         while True:
             concept_id, id_taxonref = self.synonym_queue.get()
             synonyms = wfo_graphsql.get_wfo_synonyms(concept_id)
@@ -708,9 +641,6 @@ class MainWindowController:
                 if term
             ))
             result = database.dbtaxa().db_add_synonyms(id_taxonref, names)
-            
-
-            #self.insert_synonyms(id_taxonref, synonyms)
             #print ("insert synonyms", result)
 
             self.synonym_queue.task_done()
@@ -728,25 +658,25 @@ class MainWindowController:
         self.view.button_rank_text = rank
         self.trview_taxonref_setData()
 
-    def on_menu_theme_clicked(self, item):
-        """GUI : Change the global theme of the UI through qss"""
-        if item is None:
-            item = "Diffnes"
-    #to change the theme        
-        try:
-            qss_path = f":src/florica/resources/qss/{item}.qss"
-            file = QtCore.QFile(qss_path)
-            if not file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
-                raise RuntimeError(file.errorString())
-            stream = QtCore.QTextStream(file)
-            stylesheet = stream.readAll()
-            file.close()
-            QtWidgets.qApp.setStyleSheet(stylesheet)
-            self.config_manager.theme = item
-        except Exception as e:
-            item = None
-        #set the theme to the theme button
-        self.view.buton_theme_text = item
+    # def on_menu_theme_clicked(self, item):
+    #     """GUI : Change the global theme of the UI through qss"""
+    #     if item is None:
+    #         item = "Diffnes"
+    # #to change the theme        
+    #     try:
+    #         qss_path = f":src/florica/resources/qss/{item}.qss"
+    #         file = QtCore.QFile(qss_path)
+    #         if not file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text):
+    #             raise RuntimeError(file.errorString())
+    #         stream = QtCore.QTextStream(file)
+    #         stylesheet = stream.readAll()
+    #         file.close()
+    #         QtWidgets.qApp.setStyleSheet(stylesheet)
+    #         self.config_manager.theme = item
+    #     except Exception as e:
+    #         item = None
+    #     #set the theme to the theme button
+    #     self.view.buton_theme_text = item
 
     def on_status_clicked(self):
         """GUI: Load the database dialogBox to edit database parameters"""
@@ -786,29 +716,6 @@ class MainWindowController:
     #initialize the registry database services
         database._registry = None
         database.init_registry(database.ServiceRegistry(self.dbwidget, taxa=taxa))
-    #set the APG options into self.combo_taxa
-        lst = database.dbtaxa().db_get_clades()
-        for clade in lst:
-            self.combo_taxa.addItem(clade)
-            self.combo_taxa.setItemData(self.combo_taxa.count() - 1, PNTaxa(0, clade), role=QtCore.Qt.UserRole)
-        self.combo_taxa.setCurrentIndex(0)
-        #set delegate for editing properties of PN_trview_identity & PN_trview_filter
-        self.db_properties = taxa.db_dic_properties
-        delegate = _EditProperties_Delegate(self.db_properties)
-        self.trview_properties.setItemDelegate(delegate)
-        self.trview_filter.setItemDelegate(delegate)
-        self.trview_properties.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
-        self.trview_filter.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
-        
-        #set the delegate and slots signals
-    #reconnect the signal to combo_taxa
-        self.signal_combo_taxa(True)
-        #self.combo_taxa.currentIndexChanged.connect(self.trview_taxonref_setData)
-    #set the ui enabled for the general widgets 
-        self.refresh_ui_trview_taxonref(True)
-    #initialize the trview_taxonref (list of taxa)
-        self.trview_filter_load()
-        #self.trview_taxonref_setData()
 
 
     def signal_combo_taxa (self, connected = True):
@@ -833,16 +740,11 @@ class MainWindowController:
         self.combo_taxa.setCurrentIndex(index)
         if selecteditem.id_rank >= _idrankspecies:
             return
-        #search for the item in the combo
-        for i in range (self.combo_taxa.count()):
-            if self.combo_taxa.itemData(i, role=QtCore.Qt.UserRole).idtaxonref == selecteditem.idtaxonref:
-                index = i
-                break
+        index = self.combo_taxa.findText(selecteditem.taxonref)
         #add new if not found
         if index == -1:
-            self.combo_taxa.addItem(selecteditem.taxonref)
+            self.combo_taxa.addItem(selecteditem.taxonref, [selecteditem.id_taxonref])
             index = self.combo_taxa.count() - 1
-            self.combo_taxa.setItemData(index, selecteditem, role=QtCore.Qt.UserRole)
         #reconnect and select the item
         self.signal_combo_taxa(True)
         self.combo_taxa.setCurrentIndex(index)
@@ -850,8 +752,8 @@ class MainWindowController:
     def combo_taxa_deletedItem(self, idtaxonref):
         """GUI: delete the selecteditem from the combo_taxa"""
         index = -1
-        for i in range (self.combo_taxa.count()):
-            if self.combo_taxa.itemData(i, role=QtCore.Qt.UserRole).idtaxonref == idtaxonref:
+        for i in range (1, self.combo_taxa.count()):
+            if idtaxonref in self.combo_taxa.itemData(i, role=QtCore.Qt.UserRole):
                 index = i
                 break
         if index != -1:
@@ -1338,10 +1240,10 @@ class MainWindowController:
         #cancel is confirmed
         self.trview_properties.refresh()
 
-    def on_button_filter_reset_clicked(self):
+    def _on_button_filter_reset_clicked(self):
         """GUI: Reset the filter with null values and load no-filtered data"""
         self.view.search_taxon =""
-        self.trview_filter_load()
+        self.trview_filter.refresh()
         self.trview_taxonref_setData()
         
     def on_button_metadata_clicked(self):
@@ -1625,7 +1527,12 @@ class MainWindowController:
 
     def show(self):
         """GUI: Open the main UI (mainwindow)"""
-        self.on_menu_theme_clicked (self.config_manager.theme)
+        set_theme(
+            self.config_manager,
+            self.view.button_themes,
+            self.config_manager.theme
+        )
+        #self.on_menu_theme_clicked (self.config_manager.theme)
         self.window.show()
         #self.database_open()
 

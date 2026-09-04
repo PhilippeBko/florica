@@ -45,16 +45,12 @@ from datetime import datetime
 
 
 #global dictionaries and list reflecting the database structure
-list_month = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-list_strata = ["", "Understorey", "Sub-canopy", "Canopy", "Emergent"]
-
+list_month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+list_strata = ["Understorey", "Sub-canopy", "Canopy", "Emergent"]
+MONTHS = ("january", "february", "march", "april", "may", "june","july", "august", "september", "october", "november", "december")
+STRATA = ("understorey", "sub-canopy", "canopy", "emergent")
 #synonyms for database value
-dict_strata = {
-    "understorey": [1, "sous-bois", "sotobosque", "understory"], 
-    "sub-canopy": [2, "sous-canopée", "sub-cubierta"], 
-    "canopy": [3, "canopée", "cubierta"], 
-    "emergent": [4, "émergent","emergente"]
-}
+
 """Dictionaries that allow matching the names of the months in the form of abbreviations, full names and numbers in French, English and Spanish."""
 
 dict_month = {
@@ -74,23 +70,7 @@ dict_month = {
 """Dictionaries that allow matching the names of the months in the form of abbreviations, full names and numbers in French, English and Spanish."""
 
 
-dict_traits = {
-    "stems": {"synonyms" : ['nb_stem', 'nb_tiges', 'tiges', 'tronc'], "type" : 'integer', "min": 1, "default":1, "tip": 'Number of stems at Breast Height [1m30]'},
-    "dbh": {"synonyms" : ['dhp', 'dbh_cm'], "type" : "numeric", "unit" : 'cm', "plot" :"hist", "min": 0, "max": 500, "tip": 'Diameter at Breast Height or 1m30 from the ground'},
-    "height":  {"synonyms" : ['hauteur', 'height_m'], "type" : "numeric", "unit" : 'm', "plot" :"hist", "min": 1, "max": 100, "tip": 'Height of the tree'},
-    "strata": {"synonyms" : ['strate'], "type" : "text", "translate": dict_strata, "tip": 'Tree stratum in the vertical direction'},
-    "bark_thickness": {"synonyms" : ['bark_thick'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "min": 1, "tip": 'Thickness of tree bark'},
-    "leaf_area": {"synonyms" : ['leafarea', 'leaf_area_cm2', 'leaf_area_cm²'], "type" : "numeric", "unit" : 'cm²', "plot" :"hist", "min": 0.01, "decimal": 5, "tip": 'Area of a leaf unit'},
-    "leaf_sla": {"synonyms" : ['sla', 'leafsla'], "type" : "numeric", "unit" : 'mm²/mg', "plot" :"hist", "min": 1, "max": 50, "decimal": 5, "tip": 'Specific Leaf Area'},
-    "leaf_ldmc": {"synonyms" : ['ldmc', 'leafldmc'], "type" : "numeric", "unit" : 'mg/g', "plot" :"hist", "min": 10, "max": 1000, "tip": 'Leaf Dry Matter Content'},
-    "leaf_thickness": {"synonyms" : ['leafthickness'], "type" : "numeric", "unit" : 'µm', "plot" :"hist", "min":10, "max": 1000, "tip": 'Thickness of the leaf'},
-    "wood_density": {"synonyms" : ['wd', 'wood_dens'],"type" : "numeric", "unit" : 'g/cm3', "plot" :"hist", "min": 0.1, "max": 2, "decimal": 5, "tip": 'Density of a wood core'},
-    "leaf_dry_weight": {"synonyms" : ['leafdryweight', 'dryleafmass', 'leafdrymatter', 'leaf_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 1, "max": 100000, "decimal": 2, "tip": 'Weight of a dry leaf unit'},
-    "leaf_fresh_weight": {"synonyms" : ['leaffreshweight', 'freshleafmass', 'leaffreshmatter', 'leaf_fresh_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "min": 10, "decimal": 2, "tip": 'Weight of a fresh leaf unit'},
-    "wood_core_diameter": {"synonyms" : ['core_diameter', 'core_diameter_mm', 'woodcorediameter'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Diameter of the wood core'},
-    "wood_core_length": {"synonyms" : ['core_length', 'woodcorelength', 'core_length_mm'],"type" : "numeric", "unit" : 'mm', "plot" :"hist", "decimal": 3, "tip": 'Length of the wood core'},
-    "wood_core_weight": {"synonyms" : ['core_weight', 'core_dry_weight', 'woodcoreweight', 'core_dry_weight_mg'],"type" : "numeric", "unit" : 'mg', "plot" :"hist", "decimal": 3, "tip": 'Dry weight of the wood core'}
-                }
+
 
 """ list_db_type_translate = {1:'boolean', 2:'integer', 3:'integer', 4:'integer', 5:'integer', 6:'numeric', 7: 'text', 10:'text', 14: 'date', 15:'date', 16:'date',
                           'bigint': 'integer', 'character varying': 'text','double precision' : 'numeric', 'real': 'numeric', 'smallint' : 'integer', 
@@ -116,9 +96,9 @@ dict_identity = {
                 }
 
 
-dict_traits["strata"]["items"] = list_strata
-dict_identity["month"]["items"] = list_month
-dict_db_fields = dict_identity | dict_traits
+# dict_traits["strata"]["items"] = list_strata
+# dict_identity["month"]["items"] = list_month
+# dict_db_fields = dict_identity | dict_traits
 # list_numeric_db_fields = {key: value for key, value in dict_db_fields.items() if value["type"] == "numeric"}
 
 

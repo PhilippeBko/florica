@@ -7,17 +7,16 @@ import json
 import csv
 import math
 
-import pandas as pd
+#import pandas as pd
 
 from PyQt5 import uic, QtWidgets, QtCore, QtSql, QtGui
 from PyQt5.QtCore import Qt
 ########################################
-from models.occ_model import PN_taxa_resolution_model
-from models.taxa_model import PNSynonym, PN_TaxaSearch
-from core.widgets import PN_JsonQTreeView, PN_dbTaxa , PN_DatabaseConnect
-from core.functions import (get_str_value, get_all_names, get_reference_field, postgres_error, dict_db_fields, 
-                           AppContext, init_context
-                           )
+#from florica.models.occ_model import PN_taxa_resolution_model
+from florica.models.taxa_model import PNSynonym, PNTaxa_search
+from florica.core.widgets import PN_JsonQTreeView
+from florica.core.database import PN_dbTaxa , DatabaseConnection
+from florica.core.functions import (get_str_value, get_all_names, get_reference_field)
 ########################################
 
 
@@ -43,7 +42,7 @@ dict_db_plot = {
                 "longitude":dict_db_fields["longitude"],
                 "latitude":dict_db_fields["latitude"],
                 "altitude":dict_db_fields["altitude"],
-                "type": {"value" : None, "type" : 'text', "items" : ["Circle", "Point", "Rectangle"]},
+                "type": {"value" : None, "type" : 'text', "items" : ["Circle", "Point", "Rectangle", "Transect"]},
                 "width": {"value" : None, "type" : 'numeric'},
                 "radius": {"value" : None, "type" : 'numeric', "visible": False},
                 "length": {"value" : None, "type" : 'numeric'},
@@ -1390,7 +1389,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = uic.loadUi("ui/plots.ui")
 
         #add the treeview_searchtaxa widget
-        self.treeview_searchtaxa = PN_TaxaSearch()
+        self.treeview_searchtaxa = PNTaxa_search()
         layout = self.ui.QTreeViewSearch_layout
         layout.addWidget(self.treeview_searchtaxa)
         self.treeview_searchtaxa.selectionChanged.connect(self.set_buttons_taxa_enabled)

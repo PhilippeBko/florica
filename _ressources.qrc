@@ -26,6 +26,7 @@
   <file>src/florica/resources/ui/pn_edittaxa.ui</file>
   <file>src/florica/resources/ui/pn_movetaxa.ui</file>
   <file>src/florica/resources/ui/pn_editname.ui</file>
+  <file>src/florica/resources/ui/plots.ui</file>
   
   <file>src/florica/resources/sql/create_schema_taxonomy.sql</file>
   <file>src/florica/resources/sql/config_schema_taxonomy.sql</file>

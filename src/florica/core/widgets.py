@@ -1,11 +1,11 @@
 # Standard library
 import webbrowser
 import os
+import re
 import configparser
 
 # Third-party
-from PyQt5 import QtGui, QtWidgets, uic
-from PyQt5.QtCore import Qt, pyqtSignal, QEvent, QFile
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtSql import QSqlDatabase
 
 
@@ -14,15 +14,237 @@ def load_ui_from_resources(ui_name):
     """
     load an ui file from ressources Qt.
     """
-    file = QFile(f":src/florica/resources/ui/{ui_name}")
+    file = QtCore.QFile(f":src/florica/resources/ui/{ui_name}")
     if not file.exists():
         raise FileNotFoundError(f"UI resource not found: {ui_name}")
-    file.open(QFile.ReadOnly)
+    file.open(QtCore.QFile.ReadOnly)
     ui = uic.loadUi(file)
     file.close()
     return ui
 
+def set_theme(config_manager, button, theme):
+    """GUI: Apply the selected QSS theme."""
 
+    try:
+        qss_path = f":src/florica/resources/qss/{theme}.qss"
+
+        file = QtCore.QFile(qss_path)
+
+        if not file.open(
+            QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text
+        ):
+            raise RuntimeError(file.errorString())
+
+        stream = QtCore.QTextStream(file)
+        stylesheet = stream.readAll()
+        file.close()
+
+        QtWidgets.qApp.setStyleSheet(stylesheet)
+
+        config_manager.theme = theme
+        button.setText(theme)
+
+        return True
+
+    except Exception:
+        return False
+        
+def setup_theme_menu(button, config_manager):
+    """Create the menu containing all available QSS themes."""
+
+    qss_path = ":src/florica/resources/qss"
+    files = QtCore.QDir(qss_path).entryList(
+        ["*.qss"],
+        QtCore.QDir.Files
+    )
+
+    menu = QtWidgets.QMenu(button)
+    for file in files:
+        theme = QtCore.QFileInfo(file).baseName()
+
+        action = QtWidgets.QAction(theme, button)
+        action.triggered.connect(
+            lambda checked, theme=theme:
+            set_theme(config_manager, button, theme)
+        )
+        menu.addAction(action)
+
+    button.setMenu(menu)
+
+
+
+class _EditProperties_Delegate(QtWidgets.QStyledItemDelegate):
+    """
+    A custom delegate class for editing properties in a PN_JsonQTreeView.
+
+    This class is responsible for creating editors for specific columns in the tree view,
+    based on the type of data in the dict_properties dictionary (for the moment qlinedit and combobox)
+
+    Attributes:
+        None
+
+    Methods:
+        createEditor: Creates an editor (QLineEdit or QComboBox) for a specific column.
+        setEditorData: Sets the data for the editor.
+        setModelData: Saves the data from the editor into the model.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        #self._properties = None #dict_properties
+
+    def _getFieldDef(self, index):
+        """Get the field_def related to fieldname and self._properties"""
+        field_def = index.siblingAtColumn(0).data(QtCore.Qt.UserRole)
+        return field_def
+        field_name = index.siblingAtColumn(0).data().lower()
+        levels = []
+        parent = index.parent()
+        while parent.isValid():
+            value = parent.data(0)
+            if value:
+                levels.append(value.lower())
+            parent = parent.parent()
+        levels.reverse()
+        field_def = self._properties
+        for level in levels:
+            field_def = field_def[level]
+        return field_def[field_name]
+
+    def _isEditable(self, index):
+        """Check if the field is editable according to the dict_properties"""
+        try:
+            field_def = self._getFieldDef(index)
+            return field_def.get("enabled", True)
+        except Exception:
+            return False
+
+    def createEditor(self, parent, option, index):
+        """ Create the editor according to type in the dict_properties         
+        """
+        if index.column() != 1:
+            return
+        #get the columns name and value
+        try:
+            field_value = index.siblingAtColumn(1).data()
+            field_def = self._getFieldDef(index)
+        except Exception:
+            field_def = None
+            return
+        if field_def is None : 
+            return
+        if field_def.get("enabled", True) is False:
+            return
+        
+        # #do not edit value with brackets (convention)
+        # if re.search(r'\[.*\]',field_value): 
+        #     return
+        _type = field_def.get("type", 'text')
+        _lsitems = field_def.get("items", None)
+        if _lsitems is not None:
+            editor = QtWidgets.QComboBox(parent)
+            editor.addItems(_lsitems)
+            if field_def.get("editable", True):
+                editor.setEditable(True)
+                editor.setInsertPolicy(QtWidgets.QComboBox.NoInsert)
+        elif _type == 'boolean':
+            editor = QtWidgets.QComboBox(parent)
+            editor.addItems(['True', 'False'])
+        elif _type == "date":
+            editor = QtWidgets.QDateEdit(parent)
+            editor.setCalendarPopup(True)
+            editor.setDisplayFormat("yyyy-MM-dd")
+            date = QtCore.QDate.fromString(str(field_value), "yyyy-MM-dd")
+            if date.isValid():
+                editor.setDate(date)
+            else:
+                editor.setDate(QtCore.QDate.currentDate())
+        elif _type == "integer":
+            editor = QtWidgets.QSpinBox(parent)
+            if field_def.get("min") is not None:
+                editor.setMinimum(field_def.get("min"))
+            if field_def.get("max") is not None:
+                editor.setMaximum(field_def.get("max"))
+        elif _type == "numeric":
+            editor = QtWidgets.QDoubleSpinBox(parent)
+            if field_def.get("decimal") is not None:
+                editor.setDecimals(field_def.get("decimal"))
+            if field_def.get("min") is not None:
+                editor.setMinimum(field_def.get("min"))
+            if field_def.get("max") is not None:
+                editor.setMaximum(field_def.get("max"))
+
+        else :
+            editor = QtWidgets.QLineEdit(parent)
+        editor.setProperty("tree_index", index)
+        editor.installEventFilter(self)
+        return editor    
+
+    def setEditorData(self, editor, index):
+        """ Fill the editor with the model value"""
+        if index.column() != 1: 
+            return
+
+        data = index.model().data(index, QtCore.Qt.DisplayRole)
+        if isinstance(editor, QtWidgets.QLineEdit):
+            editor.setText("" if data is None else str(data))
+        elif isinstance(editor, QtWidgets.QComboBox):
+            editor.setCurrentText("" if data is None else str(data))
+        elif isinstance(editor, QtWidgets.QSpinBox):
+            if data is None or data in ["", "None"]: 
+                data = 0 
+            editor.setValue(int(data))
+        elif isinstance(editor, QtWidgets.QDoubleSpinBox):
+            if isinstance(data, str):
+                data = data.replace(",", ".")  # Ensure decimal point is a dot
+            if data is None or data in ["", "None"]:
+                data = 0.0
+            if data:
+                editor.setValue(float(data))
+
+
+    def setModelData(self, editor, model, index):
+        """ Save the value into the model """
+        if index.column() != 1:
+            return
+
+        field_def = self._getFieldDef(index)
+        _type = field_def.get("type", "text")        
+
+        if _type == "date":
+            value = editor.date().toString("yyyy-MM-dd")
+        elif _type == "boolean":
+            value = editor.currentText()
+        elif field_def.get("items") is not None:
+            value = editor.currentText()
+        elif _type in ["integer", "numeric"]:
+            value = editor.value()
+        else:
+            value = editor.text()
+        model.setData(index, value)
+
+    def eventFilter(self, editor, event):
+        """intercept the delete key to clear the value of the cell instead of closing the editor"""
+        if event.type() == QtCore.QEvent.KeyPress:
+
+            if event.key() == QtCore.Qt.Key_Delete:
+
+                index = editor.property("tree_index")
+
+
+                if index.isValid():
+                    index.model().setData(
+                        index.siblingAtColumn(1),
+                        ''
+                    )
+
+                self.closeEditor.emit(
+                    editor,
+                    QtWidgets.QAbstractItemDelegate.NoHint
+                )
+
+                return True
+
+        return super().eventFilter(editor, event)
 
 ##class HyperLinkDelegate to create hyperlink of the QTreeView from Qtreeview_Json
 class HyperLinkDelegate(QtWidgets.QStyledItemDelegate):
@@ -36,7 +258,7 @@ class HyperLinkDelegate(QtWidgets.QStyledItemDelegate):
             # draw text in blue when its an hyperlink
             painter.save()
             painter.setPen(QtGui.QColor(100, 149, 237))  # (Cornflower Blue)
-            painter.drawText(option.rect, Qt.AlignLeft, text)
+            painter.drawText(option.rect, QtCore.Qt.AlignLeft, text)
             painter.restore()
         else:
             # draw text normally
@@ -47,11 +269,11 @@ class HyperLinkDelegate(QtWidgets.QStyledItemDelegate):
         # change the cursor if cell is an internet hyperlink and open the link if clicked
         if text and text.startswith("http"):
             if event.type() == event.MouseMove:
-                QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(Qt.PointingHandCursor))
+                QtWidgets.QApplication.setOverrideCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
             elif event.type() == event.MouseButtonRelease:
                 webbrowser.open(text)
                 return True
-            elif event.type() == QEvent.Leave:
+            elif event.type() == QtCore.QEvent.Leave:
                 QtWidgets.QApplication.restoreOverrideCursor()
         else:
             # Restore the default cursor
@@ -79,10 +301,10 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         dict_db_properties(): A dictionary containing the original json_data receive in the setdata() methods.
         _validate(): Compares the original data with the current data in the tree view and emits a signal if they are different.
     """
-    changed_signal  = pyqtSignal(bool)
+    changed_signal  = QtCore.pyqtSignal(bool)
 
 #internal functions    
-    def __init__(self, checkable = False, list_inRows = False, header = None):
+    def __init__(self, checkable = False, list_inRows = False, header = None, dict_fieldDefs = None):
         super().__init__()
         self.tab_header = header
         model = QtGui.QStandardItemModel()
@@ -90,13 +312,73 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         # if header is None:
         #     self.header().hide()
         self.dict_db_properties = {}
+        self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self._dict_fields = None
+        if dict_fieldDefs:
+            self._dict_fields = dict_fieldDefs
+            self.setEditTriggers(QtWidgets.QAbstractItemView.CurrentChanged)
+            delegate = _EditProperties_Delegate()
+            self.setItemDelegate(delegate)
+
         self.id = None
         self.checkable = checkable
-        link_delegate = HyperLinkDelegate()
-        self.setItemDelegate(link_delegate)
+        # link_delegate = HyperLinkDelegate()
+        # self.setItemDelegate(link_delegate)
         self.list_inRows = list_inRows
-        self.header().setDefaultAlignment(Qt.AlignCenter)
-        self.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.header().setDefaultAlignment(QtCore.Qt.AlignCenter)
+
+    def keyPressEvent(self, event):
+
+        if (
+            event.key() == QtCore.Qt.Key_Delete
+            and self.editTriggers() == QtWidgets.QAbstractItemView.CurrentChanged
+        ):
+            index = self.currentIndex()
+
+            if self.itemDelegate()._isEditable(index):
+                value_index = index.siblingAtColumn(1)
+
+                if value_index.isValid():
+                    value_index.model().setData(value_index, "")
+
+                return
+        super().keyPressEvent(event)
+
+    def build_properties_filter(self):
+        properties_filter = {}
+        model = self.model()
+
+        def walk(parent_index=QtCore.QModelIndex()):
+            for row in range(model.rowCount(parent_index)):
+                index = model.index(row, 0, parent_index)
+                key = index.data(QtCore.Qt.DisplayRole).lower()
+
+                for child_row in range(model.rowCount(index)):
+                    child_index = model.index(child_row, 0, index)
+
+                    field_def = child_index.data(QtCore.Qt.UserRole)
+                    value = child_index.siblingAtColumn(1).data(
+                        QtCore.Qt.DisplayRole
+                    )
+
+                    if field_def and value:
+                        _type = field_def["type"]
+
+                        if _type in ("memo", "text"):
+                            value = f"%{value}%"
+
+                        field_name = child_index.data(
+                            QtCore.Qt.DisplayRole
+                        ).lower()
+
+                        properties_filter.setdefault(key, {})[field_name] = value
+
+                walk(index)
+
+        walk()
+
+        return properties_filter
+
 
     def _validate(self, index = None):
     #test if changed, underline column 0 for changed value and emit a signal
@@ -104,14 +386,19 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
             font = QtGui.QFont()
             _bold = False
             try:
-                field_table = index.parent().data(0).lower()
-                field_name = index.siblingAtColumn(0).data().lower()
-                field_value = index.siblingAtColumn(1).data()
-                _bold = (field_value != self.dict_db_properties[field_table][field_name])
+                _dbvalue = str(self.model().itemFromIndex(index.siblingAtColumn(1)).data(QtCore.Qt.UserRole))
+                field_value = str(self.model().itemFromIndex(index.siblingAtColumn(1)).text())
+                #print (_dbvalue, field_value)
+                # field_table = index.parent().data(0).lower()
+                # field_name = index.siblingAtColumn(0).data().lower()
+                #field_value = index.siblingAtColumn(1).data()
+                #field_def = self.itemDelegate()._getFieldDef(index)
+                #print (_dbvalue,field_value)
+                _bold = (field_value.lower() != _dbvalue.lower())
             except Exception:
                 pass
             font.setUnderline(_bold)
-            self.model().setData(index.siblingAtColumn(0), font, Qt.FontRole)
+            self.model().setData(index.siblingAtColumn(0), font, QtCore.Qt.FontRole)
         self.changed_signal.emit(self.changed())
 
 
@@ -131,7 +418,7 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
     def setData(self, json_data = None):
         """set the json_data into the treeview model"""
 
-        def _set_dict_properties (item_base, _dict_item):
+        def _set_dict_properties (item_base, _dict_item, _dict_fields=None):
         #internal function to set recursively add the data into the treeview model
             if _dict_item is None : 
                 return
@@ -139,22 +426,28 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
                 _key = _key[0].upper() + _key[1:]
                 item_key = QtGui.QStandardItem(str(_key))
                 item_value = QtGui.QStandardItem(None)
+
+                if _value is None:
+                    _value = ""
+
+                #item_value.setData(str(_value), QtCore.Qt.UserRole)
                 if type(_value) is dict:
                     item_base.appendRow([item_key, item_value],)
-                    _set_dict_properties(item_key, _value)
+                    child_fields = _dict_fields.get(_key.lower(), None) if _dict_fields else None
+                    _set_dict_properties(item_key, _value, child_fields)
                 elif type(_value) is list:
                     item_key.setCheckable(self.checkable)
                     if self.list_inRows:
                         ls_items = [item_key]
                         for val in _value:
                             item = QtGui.QStandardItem(str(val))
-                            item.setTextAlignment(Qt.AlignCenter)
+                            item.setTextAlignment(QtCore.Qt.AlignCenter)
                             ls_items.append(item)
                         item_base.appendRow(ls_items)
                     else:
                         dict_key = {}
                         i = 1
-                        for val in _value:
+                        for val in _value:                            
                             item_value = QtGui.QStandardItem(str(val))
                             if _key in dict_key:
                                 itemkey = dict_key[_key]
@@ -167,7 +460,13 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
                 else:
                     item_value = QtGui.QStandardItem(str(_value))
                     item_base.appendRow([item_key, item_value],)
-
+                    
+                #set the setdata for the value and the field_def for the key in the UserRole of the model                    
+                item_value.setData(item_value.text(), QtCore.Qt.UserRole)
+                if _dict_fields:
+                    field_def = _dict_fields.get(_key.lower(), {})
+                    if "type" in field_def and field_def.get("enabled", True):
+                        item_key.setData(field_def, QtCore.Qt.UserRole)
 
     #main part of the function
     # set the treeview widget model values
@@ -180,7 +479,7 @@ class PN_JsonQTreeView(QtWidgets.QTreeView):
         except Exception:
             pass
         #add nodes to treeview from dict_db_properties
-        _set_dict_properties (self.model(), json_data)
+        _set_dict_properties (self.model(), json_data, self._dict_fields)
         self.dict_db_properties = json_data
     #ajust header
         header = self.header()
@@ -243,9 +542,9 @@ class MessageBox(QtWidgets.QMessageBox):
         msg.setText(text)
 
         msg.setWindowFlags(
-        Qt.WindowType.Dialog |
-        Qt.WindowType.CustomizeWindowHint |
-        Qt.WindowType.WindowCloseButtonHint
+        QtCore.Qt.WindowType.Dialog |
+        QtCore.Qt.WindowType.CustomizeWindowHint |
+        QtCore.Qt.WindowType.WindowCloseButtonHint
         )
 
         # central icon
